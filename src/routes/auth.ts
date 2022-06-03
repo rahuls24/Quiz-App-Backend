@@ -1,4 +1,7 @@
-import express from 'express';
+import { createUserWithEmailAndPassword } from './../controllers/auth';
+import {Router} from 'express';
 
-const router = express.Router();
 
+export const router = Router();
+
+router.post('/register-user-email', createUserWithEmailAndPassword);
