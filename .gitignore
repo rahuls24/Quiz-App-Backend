@@ -1,0 +1,6 @@
+/dist
+/node_modules
+**/config
+**/.env
+package-lock.json
+data-modal.txt
