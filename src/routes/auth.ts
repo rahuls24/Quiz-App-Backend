@@ -1,6 +1,6 @@
 import { createUserWithEmailAndPassword, signinWithEmailAndPassword } from './../controllers/auth';
 import {Router} from 'express';
-
+import passport from 'passport'
 
 export const router = Router();
 

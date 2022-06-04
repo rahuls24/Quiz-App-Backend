@@ -76,6 +76,7 @@ export async function signinWithEmailAndPassword(req: Request, res: Response) {
 		email: req.body.email,
 		password: req.body.password,
 	};
+
 	if (!AreEveryThingsComingInEmailSigninReqBody(currentUser)) {
 		let resObj = createFailureResponseObj('Please send all required data');
 		return responseHandler(res, httpStatusCode.badRequest, resObj);
@@ -93,25 +94,32 @@ export async function signinWithEmailAndPassword(req: Request, res: Response) {
 		);
 		return responseHandler(res, httpStatusCode.badRequest, resObj);
 	}
-	const user = await User.findOne({ email: currentUser.email });
-	if (!user) {
-		let resObj = createFailureResponseObj('User is not found');
-		return responseHandler(res, httpStatusCode.notFound, resObj);
+	try {
+		const user = await User.findOne({ email: currentUser.email });
+		if (!user) {
+			let resObj = createFailureResponseObj('User is not found');
+			return responseHandler(res, httpStatusCode.notFound, resObj);
+		}
+		const isPasswordMatch = await compare(
+			currentUser.password,
+			user.password,
+		);
+		if (!isPasswordMatch) {
+			let resObj = createFailureResponseObj('Password is not correct');
+			return responseHandler(res, httpStatusCode.badRequest, resObj);
+		}
+		const bearerToken = sign(
+			{
+				exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+				data: user,
+			},
+			process.env.JWTSecretKey ?? 'defaultJwtKey',
+		);
+		return res.status(httpStatusCode.ok).json({
+			status: 'success',
+			token: bearerToken,
+		});
+	} catch (error) {
+		return errorHandlerOfRequestCatchBlock(res, error);
 	}
-	const isPasswordMatch = await compare(currentUser.password, user.password);
-	if (!isPasswordMatch) {
-		let resObj = createFailureResponseObj('Password is not correct');
-		return responseHandler(res, httpStatusCode.badRequest, resObj);
-	}
-	const bearerToken = sign(
-		{
-			exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-			data: user,
-		},
-		process.env.JWTSecretKey ?? 'defaultJwtKey',
-	);
-	return res.status(httpStatusCode.ok).json({
-		status:'success',
-		token:bearerToken,
-	})
 }
