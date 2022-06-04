@@ -8,3 +8,9 @@ export function errorHandlerOfRequestCatchBlock(
         errorMsg: err.message
     })
 }
+export function createFailureResponseObj(errorMsg:string){
+    return {
+        status:'fail',
+        error:errorMsg
+    }
+}

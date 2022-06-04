@@ -50,4 +50,6 @@ const userSchema = new Schema({
 		default: false,
 	},
 });
+// Creating index base on email
+userSchema.index({email:1},{unique:true})
 export const User: Model<IUser> = model('User', userSchema);
