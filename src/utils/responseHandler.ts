@@ -12,7 +12,7 @@ export const httpStatusCode = {
 	ok: 200,
 	created: 201,
 	accepted: 202,
-	notContent:204,
+	noContent:204,
 	movedPermanently: 301,
 	badRequest: 400,
 	unauthorized: 401,

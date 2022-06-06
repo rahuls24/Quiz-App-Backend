@@ -23,7 +23,6 @@ export async function createUserWithEmailAndPassword(
 		password: req.body.password,
 		phone: req.body.phone,
 		role: req.body.role,
-		quizzes: [] as string[],
 	};
 	if (!AreEveryThingsComingInEmailRegisterReqBody(newUser)) {
 		let resObj = createFailureResponseObj('Please send all required data');
@@ -108,16 +107,24 @@ export async function signinWithEmailAndPassword(req: Request, res: Response) {
 			let resObj = createFailureResponseObj('Password is not correct');
 			return responseHandler(res, httpStatusCode.badRequest, resObj);
 		}
+		const userDataForHash = {
+			_id:user._id,
+			name: user.name,
+			email:user.email,
+			role:user.role,
+			isVerified:user.isVerified
+		}
 		const bearerToken = sign(
 			{
+				// exp: Math.floor(Date.now() / 1000) + 120,
 				exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-				data: user,
+				data: userDataForHash,
 			},
 			process.env.JWTSecretKey ?? 'defaultJwtKey',
 		);
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			token: bearerToken,
+			token: "Bearer "+bearerToken,
 		});
 	} catch (error) {
 		return errorHandlerOfRequestCatchBlock(res, error);

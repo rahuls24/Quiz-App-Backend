@@ -1,4 +1,4 @@
-import { User } from './../../models/user';
+import { User } from '../../models/user';
 import {
 	Strategy as JwtStrategy,
 	ExtractJwt,
@@ -13,21 +13,15 @@ export default function strategy() {
 		secretOrKey: process.env.JWTSecretKey ?? 'defaultJwtKey',
 	};
 	passport.use(
-		'examinee',
+		'user',
 		new JwtStrategy(opts, async (jwtPayload, done) => {
-			const unauthorizeError: any = new Error(
-				'User do not have permission to access this route',
-			);
-			unauthorizeError.status = 401;
-			const userNotFoundError: any = new Error('No user found');
-			userNotFoundError.status = 401;
 			try {
+				const userNotFoundError: any = new Error('No user found');
+				userNotFoundError.status = 401;
 				const user = await User.findOne({
 					email: jwtPayload.data.email,
 				});
 				if (!user) return done(userNotFoundError, false);
-				if (user.role !== 'examinee')
-					return done(unauthorizeError, false);
 				return done(null, user);
 			} catch (error) {
 				return done(error, false);

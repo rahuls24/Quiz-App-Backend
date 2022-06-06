@@ -1,7 +1,5 @@
 import { model, Schema, Model, ValidatorProps } from 'mongoose';
 import { isValidEmail } from '../utils/validators';
-import { IUser } from '../interfaces/authInterfaces';
-
 const userSchema = new Schema({
 	name: {
 		type: String,
@@ -33,14 +31,9 @@ const userSchema = new Schema({
 		required: true,
 		enum: {
 			values: ['examiner', 'examinee', 'admin'],
-			message: '{VALUE} is not supported',
+			message: '{VALUE} is not supported in User role',
 		},
 	},
-	quizzes: [
-		{
-			type: String,
-		},
-	],
 	registerOn: {
 		type: Date,
 		default: Date.now,
@@ -52,4 +45,4 @@ const userSchema = new Schema({
 });
 // Creating index base on email
 userSchema.index({email:1},{unique:true})
-export const User: Model<IUser> = model('User', userSchema);
+export const User = model('User', userSchema);
