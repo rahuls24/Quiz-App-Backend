@@ -14,7 +14,13 @@ const app = express();
 // Initializing  middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
+app.use(function(req, res, next) {
+	res.header("Access-Control-Allow-Origin", "*");
+	res.header("Access-Control-Allow-Methods", "*");
+	res.header("Access-Control-Allow-Headers", 
+			   "*");
+    next();
+  });
 // TODO: When should I use session 
 //  
 // app.use(
@@ -68,6 +74,10 @@ connection.on('connected', () => {
 
 // !It should be alway last middleware
 app.use(commonErrorMiddleware);
-
-const PORT = process.env.PORT || 3000;
+app.get('/',(req,res)=>{
+	res.status(200).json({
+		working:"OK"
+	})
+})
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`server is running on PORT ${PORT}`));

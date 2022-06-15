@@ -6,6 +6,7 @@ import {
 } from 'passport-jwt';
 
 import passport from 'passport';
+import { ErrorWithStatus } from '../../interfaces/common';
 
 export default function strategy() {
 	const opts: StrategyOptions = {
@@ -15,11 +16,11 @@ export default function strategy() {
 	passport.use(
 		'examiner',
 		new JwtStrategy(opts, async (jwtPayload, done) => {
-			const unauthorizeError: any = new Error(
+			const unauthorizeError: ErrorWithStatus = new Error(
 				'User do not have permission to access this route',
 			);
 			unauthorizeError.status = 401;
-			const userNotFoundError: any = new Error('No user found');
+			const userNotFoundError: ErrorWithStatus = new Error('No user found');
 			userNotFoundError.status = 401;
 			try {
 				const user = await User.findOne({

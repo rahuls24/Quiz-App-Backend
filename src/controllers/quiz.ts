@@ -1,17 +1,20 @@
 import { Quiz } from './../models/quiz';
 import { httpStatusCode } from './../utils/responseHandler';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { responseHandler } from '../utils/responseHandler';
-import {
-	createFailureResponseObj,
-	errorHandlerOfRequestCatchBlock,
-} from '../utils/errorHandler';
+import { createAnError, createFailureResponseObj } from '../utils/errorHandler';
 import {
 	AreEveryThingsComingInSaveQuizReqBody,
 	isValidMongoObjectId,
 } from '../utils/validators';
-export async function saveQuiz(req: Request, res: Response) {
-	const user: any = req.user;
+import { RequestForProtectedRoute } from '../interfaces/common';
+
+export async function saveQuiz(
+	req: RequestForProtectedRoute,
+	res: Response,
+	next: NextFunction,
+) {
+	const user = req.user;
 	const newQuiz = {
 		name: req.body.name,
 		topics: req.body.topics ?? ([] as string[]),
@@ -25,51 +28,46 @@ export async function saveQuiz(req: Request, res: Response) {
 	}
 	try {
 		const quiz = await new Quiz(newQuiz).save();
-		if (!quiz) {
-			let resObj = createFailureResponseObj('Something went wrong');
-			return responseHandler(
-				res,
-				httpStatusCode.internalServerError,
-				resObj,
-			);
-		}
+		if (!quiz)
+			throw createAnError('Something went wrong while saving the quiz');
 		let resObj = {
 			status: 'success',
 			quiz: quiz,
 		};
 		return responseHandler(res, httpStatusCode.created, resObj);
 	} catch (error) {
-		return errorHandlerOfRequestCatchBlock(res, error);
+		next(error);
 	}
 }
 
-export async function getAllQuizzesForCurrentExaminer(
-	req: Request,
+async function getAllQuizzesForCurrentExaminer(
+	req: RequestForProtectedRoute,
 	res: Response,
+	next: NextFunction,
 ) {
-	const user: any = req.user;
+	const user = req.user;
 	const currentExaminerId = user?._id;
 	try {
 		const quizzes = await Quiz.find({ createdBy: currentExaminerId });
-		if (!quizzes) {
-			let resObj = createFailureResponseObj('Something went wrong');
-			return responseHandler(
-				res,
-				httpStatusCode.internalServerError,
-				resObj,
+		if (!quizzes)
+			throw createAnError(
+				'Something went wrong while getting quiz for the examiner',
 			);
-		}
 		let resObj = {
 			status: 'success',
 			quizzes: quizzes,
 		};
 		return responseHandler(res, httpStatusCode.ok, resObj);
 	} catch (error) {
-		return errorHandlerOfRequestCatchBlock(res, error);
+		next(error);
 	}
 }
 
-export async function getAllQuizzesForExaminers(req: Request, res: Response) {
+export async function getAllQuizzesForExaminers(
+	req: RequestForProtectedRoute,
+	res: Response,
+	next: NextFunction,
+) {
 	const examiners = req.body.examiners;
 	if (!examiners) {
 		let resObj = createFailureResponseObj('Please send examiner data');
@@ -89,55 +87,51 @@ export async function getAllQuizzesForExaminers(req: Request, res: Response) {
 	}
 	try {
 		const quizzes = await Quiz.find({ createdBy: { $in: examiners } });
-		if (!quizzes) {
-			let resObj = createFailureResponseObj('Something went wrong');
-			return responseHandler(
-				res,
-				httpStatusCode.internalServerError,
-				resObj,
+		if (!quizzes)
+			throw createAnError(
+				'Something went wrong while getting quiz for examiners',
 			);
-		}
 		let resObj = {
 			status: 'success',
 			quizzes: quizzes,
 		};
 		return responseHandler(res, httpStatusCode.ok, resObj);
 	} catch (error) {
-		return errorHandlerOfRequestCatchBlock(res, error);
+		next(error);
 	}
 }
 
-export async function getAllQuizForCurrentExaminee(
-	req: Request,
+async function getAllQuizForCurrentExaminee(
+	req: RequestForProtectedRoute,
 	res: Response,
+	next: NextFunction,
 ) {
-	console.log(req)
-	const user: any = req.user;
+	const user = req.user;
 	const currentExamineeId = user._id;
 	try {
 		const quizzes = await Quiz.find({
 			enrolledBy: { $in: [currentExamineeId] },
 		});
-		if (!quizzes) {
-			let resObj = createFailureResponseObj('Something went wrong');
-			return responseHandler(
-				res,
-				httpStatusCode.internalServerError,
-				resObj,
+		if (!quizzes)
+			throw createAnError(
+				'Something went wrong while getting quiz for the examinee',
 			);
-		}
 		let resObj = {
 			status: 'success',
 			quizzes: quizzes,
 		};
 		return responseHandler(res, httpStatusCode.ok, resObj);
 	} catch (error) {
-		return errorHandlerOfRequestCatchBlock(res, error);
+		next(error);
 	}
 }
 
-export async function enrollAExaminee(req: Request, res: Response) {
-	const user: any = req.user;
+export async function enrollAExamineeInAQuiz(
+	req: RequestForProtectedRoute,
+	res: Response,
+	next: NextFunction,
+) {
+	const user = req.user;
 	let quizId = req.body.quizId;
 	if (!isValidMongoObjectId(quizId)) {
 		let resObj = createFailureResponseObj('Please send a valid quiz id');
@@ -149,6 +143,7 @@ export async function enrollAExaminee(req: Request, res: Response) {
 			{ _id: quizId },
 			{ $addToSet: { enrolledBy: user._id } },
 		);
+
 		if (updatedQuiz.modifiedCount === 0) {
 			let resObj = createFailureResponseObj(
 				'User is already enrolled in this quiz or quiz may not found',
@@ -160,6 +155,76 @@ export async function enrollAExaminee(req: Request, res: Response) {
 		};
 		return responseHandler(res, httpStatusCode.noContent, resObj);
 	} catch (error) {
-		return errorHandlerOfRequestCatchBlock(res, error);
+		next(error);
 	}
+}
+
+export async function getAllQuizzesForCurrentUser(
+	req: RequestForProtectedRoute,
+	res: Response,
+	next: NextFunction,
+) {
+	const user = req.user;
+	if (user.role.toLowerCase() === 'examiner') {
+		return getAllQuizzesForCurrentExaminer(req, res, next);
+	} else if (user.role.toLowerCase() === 'examinee') {
+		return getAllQuizForCurrentExaminee(req, res, next);
+	} else {
+		let resObj = createFailureResponseObj('Something wrong in user role');
+		return responseHandler(res, httpStatusCode.conflict, resObj);
+	}
+}
+
+export async function getAllUnEnrolledQuizForCurrentUser(
+	req: RequestForProtectedRoute,
+	res: Response,
+	next: NextFunction,
+) {
+	const user = req.user;
+	if (user.role.toLowerCase() === 'examiner') {
+		try {
+			const examinerQuiz = await Quiz.find({
+				createdBy: { $ne: user._id },
+			});
+			if (!examinerQuiz)
+				throw createAnError(
+					'Something went wrong while fetching quiz for examiner',
+				);
+			let resObj = {
+				status: 'success',
+				quizzes: examinerQuiz,
+			};
+			return responseHandler(res, httpStatusCode.ok, resObj);
+		} catch (error) {
+			next(error);
+		}
+	} else if (user.role.toLowerCase() === 'examinee') {
+		try {
+			const quizzes = await Quiz.find({
+				enrolledBy: { $nin: [user._id] },
+			});
+			if (!quizzes)
+				throw createAnError(
+					'Something went wrong while getting quiz for the examinee',
+				);
+			let resObj = {
+				status: 'success',
+				quizzes: quizzes,
+			};
+			return responseHandler(res, httpStatusCode.ok, resObj);
+		} catch (error) {
+			next(error);
+		}
+	} else {
+		let resObj = createFailureResponseObj('Something wrong in user role');
+		return responseHandler(res, httpStatusCode.conflict, resObj);
+	}
+}
+
+function delayForGivenTime(time: number) {
+	return new Promise((res, rej) => {
+		setTimeout(() => {
+			res(24);
+		}, time);
+	});
 }

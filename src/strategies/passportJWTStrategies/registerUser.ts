@@ -6,7 +6,7 @@ import {
 } from 'passport-jwt';
 
 import passport from 'passport';
-
+import { ErrorWithStatus } from '../../interfaces/common';
 export default function strategy() {
 	const opts: StrategyOptions = {
 		jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -16,7 +16,7 @@ export default function strategy() {
 		'user',
 		new JwtStrategy(opts, async (jwtPayload, done) => {
 			try {
-				const userNotFoundError: any = new Error('No user found');
+				const userNotFoundError: ErrorWithStatus = new Error('No user found');
 				userNotFoundError.status = 401;
 				const user = await User.findOne({
 					email: jwtPayload.data.email,

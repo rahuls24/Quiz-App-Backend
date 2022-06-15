@@ -1,4 +1,5 @@
-import { Request, Response } from 'express';
+import { RequestForProtectedRoute } from './../interfaces/common';
+import { Request, Response, NextFunction } from 'express';
 import { responseHandler, httpStatusCode } from '../utils/responseHandler';
 import {
 	AreEveryThingsComingInEmailRegisterReqBody,
@@ -94,7 +95,10 @@ export async function signinWithEmailAndPassword(req: Request, res: Response) {
 		return responseHandler(res, httpStatusCode.badRequest, resObj);
 	}
 	try {
-		const user = await User.findOne({ email: currentUser.email });
+		const user = await User.findOne(
+			{ email: currentUser.email },
+			{ __v: 0 },
+		);
 		if (!user) {
 			let resObj = createFailureResponseObj('User is not found');
 			return responseHandler(res, httpStatusCode.notFound, resObj);
@@ -108,12 +112,12 @@ export async function signinWithEmailAndPassword(req: Request, res: Response) {
 			return responseHandler(res, httpStatusCode.badRequest, resObj);
 		}
 		const userDataForHash = {
-			_id:user._id,
+			_id: user._id,
 			name: user.name,
-			email:user.email,
-			role:user.role,
-			isVerified:user.isVerified
-		}
+			email: user.email,
+			role: user.role,
+			isVerified: user.isVerified,
+		};
 		const bearerToken = sign(
 			{
 				// exp: Math.floor(Date.now() / 1000) + 120,
@@ -122,11 +126,36 @@ export async function signinWithEmailAndPassword(req: Request, res: Response) {
 			},
 			process.env.JWTSecretKey ?? 'defaultJwtKey',
 		);
+
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			token: "Bearer "+bearerToken,
+			token: 'Bearer ' + bearerToken,
 		});
 	} catch (error) {
 		return errorHandlerOfRequestCatchBlock(res, error);
+	}
+}
+
+export async function getUserDetails(
+	req: RequestForProtectedRoute,
+	res: Response,
+	next: NextFunction,
+) {
+	const user = req.user;
+	try {
+		const currentUser = await User.findById(user._id, {
+			password: 0,
+			__v: 0,
+		});
+		if (currentUser) {
+			let resObj = {
+				status: 'success',
+				user: currentUser,
+			};
+			return responseHandler(res, httpStatusCode.ok, resObj);
+		}
+		throw new Error('Something went wrong while registering the user');
+	} catch (error) {
+		next(error);
 	}
 }
