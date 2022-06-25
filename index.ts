@@ -4,6 +4,7 @@ import session from 'express-session';
 import { connect, connection } from 'mongoose';
 import { router as authRouter } from './src/routes/auth';
 import { router as quizRouter } from './src/routes/quiz';
+import { router as questionRouter } from './src/routes/question';
 import passport from 'passport';
 import examinerStrategy from './src/strategies/passportJWTStrategies/examiner';
 import examineeStrategy from './src/strategies/passportJWTStrategies/examinee';
@@ -50,6 +51,7 @@ app.use(passport.initialize());
 //  Registering routes
 app.use('/api/auth', authRouter);
 app.use('/api/quiz', quizRouter);
+app.use('/api/question', questionRouter);
 // Initializing passport strategies
 examinerStrategy();
 examineeStrategy();

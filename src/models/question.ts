@@ -9,7 +9,7 @@ const questionSchema = new Schema({
 		type: String,
 		required: true,
 		enum: {
-			values: ['singleAnswer', 'MultipleAnswer'],
+			values: ['singleAnswer', 'multipleAnswer'],
 			message: '{VALUE} is not supported in questionType of question',
 		},
 	},
@@ -37,6 +37,14 @@ const questionSchema = new Schema({
 			required: true,
 		},
 	],
+	images: [
+		{
+			type: String,
+			required: false,
+		},
+	],
 });
-questionSchema.index({ quizzes: 1, questionText: 'text' });
-export const Quiz = model('Question', questionSchema);
+
+questionSchema.index({ quizzes: 1 });
+questionSchema.index({ questionText: 'text' });
+export const Question = model('Question', questionSchema);

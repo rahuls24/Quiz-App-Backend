@@ -1,6 +1,6 @@
 import { Quiz } from './../models/quiz';
 import { httpStatusCode } from './../utils/responseHandler';
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { responseHandler } from '../utils/responseHandler';
 import { createAnError, createFailureResponseObj } from '../utils/errorHandler';
 import {
@@ -17,7 +17,7 @@ export async function saveQuiz(
 	const user = req.user;
 	const newQuiz = {
 		name: req.body.name,
-		topics: req.body.topics ?? ([] as string[]),
+		topics: req.body.topics ?? ['misc'],
 		marks: [] as object[],
 		createdBy: user._id,
 		enrolledBy: [user._id],
@@ -25,6 +25,9 @@ export async function saveQuiz(
 	if (!AreEveryThingsComingInSaveQuizReqBody(newQuiz)) {
 		let resObj = createFailureResponseObj('Please send all required data');
 		return responseHandler(res, httpStatusCode.badRequest, resObj);
+	}
+	if (typeof newQuiz.topics === 'string') {
+		newQuiz.topics = newQuiz.topics.split(',');
 	}
 	try {
 		const quiz = await new Quiz(newQuiz).save();
@@ -220,6 +223,8 @@ export async function getAllUnEnrolledQuizForCurrentUser(
 		return responseHandler(res, httpStatusCode.conflict, resObj);
 	}
 }
+
+
 
 function delayForGivenTime(time: number) {
 	return new Promise((res, rej) => {

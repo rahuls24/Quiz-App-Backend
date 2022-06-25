@@ -10,7 +10,7 @@ import {
 export const router = Router();
 
 router.post(
-	'/save-quiz',
+	'/save-a-quiz',
 	passport.authenticate('examiner', { session: false }),
 	saveQuiz,
 );
