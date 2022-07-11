@@ -1,3 +1,4 @@
+import { QuizTimeTracker } from './src/models/quizTimeTracker';
 import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import session from 'express-session';
@@ -76,10 +77,13 @@ connection.on('connected', () => {
 
 // !It should be alway last middleware
 app.use(commonErrorMiddleware);
-app.get('/',(req,res)=>{
+app.get('/', async(req,res)=>{
+	await new QuizTimeTracker().save() 
 	res.status(200).json({
 		working:"OK"
 	})
 })
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`server is running on PORT ${PORT}`));
+
+

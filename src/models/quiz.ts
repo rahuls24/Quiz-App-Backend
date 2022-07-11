@@ -43,10 +43,10 @@ const quizSchema = new Schema({
 		type: Date,
 		default: Date.now,
 	},
-	isFinished:{
-		type: Boolean,
-		default: false
-	}
+	quizDuration: {
+		type: Number,
+		required: true,
+	},
 });
 quizSchema.index({ createdBy: 1 });
 quizSchema.index({ enrolledBy: 1 });

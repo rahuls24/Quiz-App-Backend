@@ -1,3 +1,4 @@
+import { QuizTimeTracker } from './../models/quizTimeTracker';
 import { Quiz } from './../models/quiz';
 import { httpStatusCode } from './../utils/responseHandler';
 import { Response, NextFunction } from 'express';
@@ -21,6 +22,7 @@ export async function saveQuiz(
 		marks: [] as object[],
 		createdBy: user._id,
 		enrolledBy: [user._id],
+		totalTime: req.body.totalTime,
 	};
 	if (!AreEveryThingsComingInSaveQuizReqBody(newQuiz)) {
 		let resObj = createFailureResponseObj('Please send all required data');
@@ -224,7 +226,56 @@ export async function getAllUnEnrolledQuizForCurrentUser(
 	}
 }
 
+export async function saveQuizStartTime(
+	req: RequestForProtectedRoute,
+	res: Response,
+	next: NextFunction,
+) {
+	const user = req.user;
+	const payload = {
+		quizId: req.body.quizId,
+		startedBy: user._id,
+	};
+	try {
+		if (!isValidMongoObjectId(payload.quizId))
+			throw createAnError('Please send a valid quiz id', 400);
+		const isQuizPresent = await Quiz.findById(payload.quizId);
+		if (!isQuizPresent)
+			throw createAnError('Quiz is not present in DB', 404);
+		const isSaved = await new QuizTimeTracker(payload).save();
+		if (!isSaved)
+			throw createAnError('Something went wrong while saving time in db');
+		return res.status(httpStatusCode.noContent).json({
+			status:'success'
+		});
+	} catch (error) {
+		next(error);
+	}
+}
 
+export async function getQuizStartTime(
+	req: RequestForProtectedRoute,
+	res: Response,
+	next: NextFunction,
+) {
+	const quizId = req.params.quizId;
+	const user = req.user
+	try {
+		console.log(quizId)
+		if(!isValidMongoObjectId(quizId))  throw createAnError('Please send a valid quiz id', 400);
+		const startTime = await QuizTimeTracker.find({$and:[{quizId:quizId,startedBy:user._id}]});
+		if(startTime.length===0) throw createAnError('Start time is not present in db', 404);
+		if(startTime.length>1) throw createAnError('There is more than one time for this Quiz', 404);
+		return res.status(httpStatusCode.ok).json({
+			status: 'success',
+			startTime:startTime[0],
+		});
+	} catch (error) {
+		next(error)
+	}
+	
+
+}
 
 function delayForGivenTime(time: number) {
 	return new Promise((res, rej) => {

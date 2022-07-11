@@ -6,6 +6,8 @@ import {
 	enrollAExamineeInAQuiz,
 	getAllQuizzesForCurrentUser,
 	getAllUnEnrolledQuizForCurrentUser,
+	saveQuizStartTime,
+	getQuizStartTime,
 } from '../controllers/quiz';
 export const router = Router();
 
@@ -33,4 +35,16 @@ router.post(
 	'/enroll-for-a-quiz',
 	passport.authenticate('examinee', { session: false }),
 	enrollAExamineeInAQuiz,
+);
+
+router.post(
+	'/save-start-time',
+	passport.authenticate('examinee', { session: false }),
+	saveQuizStartTime,
+);
+
+router.get(
+	'/get-quiz-start-time/:quizId',
+	passport.authenticate('examinee', { session: false }),
+	getQuizStartTime,
 );

@@ -29,6 +29,7 @@ export function AreEveryThingsComingInEmailSigninReqBody(
 }
 export function AreEveryThingsComingInSaveQuizReqBody(reqQuiz: any): boolean {
 	if (!reqQuiz.name) return false;
+	if(!reqQuiz.totalTime) return false
 	return true;
 }
 export function isValidQuestionData(question: any = {}): boolean {
