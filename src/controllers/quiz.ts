@@ -22,7 +22,7 @@ export async function saveQuiz(
 		marks: [] as object[],
 		createdBy: user._id,
 		enrolledBy: [user._id],
-		totalTime: req.body.totalTime,
+		quizDuration: req.body.totalTime,
 	};
 	if (!AreEveryThingsComingInSaveQuizReqBody(newQuiz)) {
 		let resObj = createFailureResponseObj('Please send all required data');

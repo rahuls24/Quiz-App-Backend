@@ -13,3 +13,7 @@ export interface RequestForProtectedRoute extends Request{
 export interface ErrorWithStatus extends Error{
     status?:number
 }
+
+export interface CommonObjectWithStringKey{
+	[k: string]:any;
+}

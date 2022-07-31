@@ -20,6 +20,7 @@
     "mongoose": "^6.3.5",
     "passport": "^0.6.0",
     "passport-jwt": "^4.0.0",
+    "ramda": "^0.28.0",
     "validator": "^13.7.0",
     "winston": "^3.7.2"
   },
@@ -30,6 +31,7 @@
     "@types/express-session": "^1.17.4",
     "@types/jsonwebtoken": "^8.5.8",
     "@types/passport-jwt": "^3.0.6",
+    "@types/ramda": "^0.28.15",
     "@types/validator": "^13.7.2",
     "nodemon": "^2.0.16",
     "ts-node": "^10.8.0",

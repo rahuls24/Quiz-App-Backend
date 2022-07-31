@@ -1,5 +1,8 @@
+import { CommonObjectWithStringKey } from './../interfaces/common';
 import { Types } from 'mongoose';
 import isEmail from 'validator/lib/isEmail';
+import * as R from 'ramda';
+
 export function isValidEmail(email: string): Boolean {
 	return isEmail(email);
 }
@@ -29,7 +32,7 @@ export function AreEveryThingsComingInEmailSigninReqBody(
 }
 export function AreEveryThingsComingInSaveQuizReqBody(reqQuiz: any): boolean {
 	if (!reqQuiz.name) return false;
-	if(!reqQuiz.totalTime) return false
+	if (!reqQuiz.quizDuration) return false;
 	return true;
 }
 export function isValidQuestionData(question: any = {}): boolean {
@@ -88,4 +91,30 @@ export function isValidQuestionData(question: any = {}): boolean {
 			);
 		};
 	}
+}
+export function isValidSubmittedQuestions(questionsList: any) {
+	if (!Array.isArray(questionsList)) return false;
+	if (
+		!questionsList.every((question: any) =>
+			Array.isArray(question?.answers),
+		)
+	)
+		return false;
+	if (
+		!questionsList.every((question: any) =>
+			isValidMongoObjectId(question?._id),
+		)
+	)
+		return false;
+	return true;
+}
+export function AreBothArraysEqual(arr1: any[], arr2: any[]) {
+	return R.equals(arr1.sort(), arr2.sort());
+}
+export function AreBothObjectsEqual(obj1:CommonObjectWithStringKey,obj2:CommonObjectWithStringKey){
+	for (const key in obj1) {
+		if(!(key in obj2)) return false
+		if(!AreBothArraysEqual(obj1[key],obj2[key])) return false;
+	 }
+	 return true
 }

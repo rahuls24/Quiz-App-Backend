@@ -1,6 +1,10 @@
 import { Router } from 'express';
 import passport from 'passport';
-import { getAllQuestionsOfAQuiz, saveQuestionsForTheQuiz } from '../controllers/question';
+import {
+	getAllQuestionsOfAQuiz,
+	saveQuestionsForTheQuiz,
+	submitQuizHandler,
+} from '../controllers/question';
 export const router = Router();
 
 router.post(
@@ -12,5 +16,10 @@ router.post(
 router.get(
 	'/get-all-questions/:quizId',
 	passport.authenticate('user', { session: false }),
-	getAllQuestionsOfAQuiz
+	getAllQuestionsOfAQuiz,
+);
+router.post(
+	'/submit-quiz',
+	passport.authenticate('examinee', { session: false }),
+	submitQuizHandler,
 );

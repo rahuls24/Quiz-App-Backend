@@ -1,8 +1,18 @@
+import { httpStatusCode } from './../utils/responseHandler';
+import {
+	calculateMarks,
+	calculateNumberOfRightWrongAnswersAndSkippedQuestion,
+	normalizeQuestionData,
+} from '../utils/quizFunctions';
 import { Quiz } from './../models/quiz';
 import { Question } from './../models/question';
 import { NextFunction, Response } from 'express';
 import { createAnError } from '../utils/errorHandler';
-import { isValidMongoObjectId, isValidQuestionData } from '../utils/validators';
+import {
+	isValidMongoObjectId,
+	isValidQuestionData,
+	isValidSubmittedQuestions,
+} from '../utils/validators';
 import { RequestForProtectedRoute } from './../interfaces/common';
 
 export async function saveQuestionsForTheQuiz(
@@ -52,10 +62,10 @@ export async function getAllQuestionsOfAQuiz(
 			enrolledBy: 1,
 			createdBy: 1,
 		});
+		if (!quizData || quizData?.length === 0)
+			throw createAnError('Quiz is not found in db', 404);
 		// Hiding questions if user is not enrolled to current quiz
 		if (user.role === 'examinee') {
-			if (!quizData || quizData?.length === 0)
-				throw createAnError('Quiz is not found in db', 404);
 			if (!quizData?.enrolledBy?.includes(user._id))
 				shouldOnlyGiveTotalNoOfQuestion = true;
 		}
@@ -97,6 +107,72 @@ export async function getAllQuestionsOfAQuiz(
 	}
 }
 
+export async function submitQuizHandler(
+	req: RequestForProtectedRoute,
+	res: Response,
+	next: NextFunction,
+) {
+	const quizId = req.body.quizId ?? '';
+	const submittedQuestion = req.body.submittedQuestion;
+	const user = req.user;
+	try {
+		if (!isValidMongoObjectId(quizId))
+			throw createAnError('Please give a valid quiz id', 400);
+		if (!isValidSubmittedQuestions(submittedQuestion))
+			throw createAnError(
+				'Something wrong with submittedQuestion obj',
+				400,
+			);
+		let questionsList = await Question.find(
+			{
+				quizzes: { $in: [quizId] },
+			},
+			{
+				_id: 1,
+				answers: 1,
+			},
+		);
+		const normalizeQuestionsDataFromDB =
+			normalizeQuestionData(questionsList);
+		const normalizeQuestionsDataFromReqObj =
+			normalizeQuestionData(submittedQuestion);
+		const [numberOfRightAnswers, numberOfWrongAnswers, skippedQuestions] =
+			calculateNumberOfRightWrongAnswersAndSkippedQuestion(
+				normalizeQuestionsDataFromDB,
+				normalizeQuestionsDataFromReqObj,
+			);
+		// Default marks will be 1 per correct answer
+		const totalMarks = calculateMarks(
+			numberOfRightAnswers,
+			numberOfWrongAnswers,
+			1,
+		);
+		const marksPayload = {
+			marks: totalMarks,
+			examineeId: user._id,
+			numberOfRightAnswers,
+			numberOfWrongAnswers,
+		};
+		const updatedQuiz = await Quiz.findByIdAndUpdate(quizId, {
+			$push: { marks: marksPayload },
+		});
+		if (!updatedQuiz)
+			throw createAnError(
+				'Something went wrong while saving the marks into db. Please try again',
+			);
+
+		res.status(httpStatusCode.ok).json({
+			status: 'success',
+			result: {
+				numberOfRightAnswers: numberOfRightAnswers,
+				numberOfWrongAnswers: numberOfWrongAnswers,
+				skippedQuestions: skippedQuestions,
+			},
+		});
+	} catch (error) {
+		next(error);
+	}
+}
 // NEED TO DELATE
 function delayForGivenTime(time: number) {
 	return new Promise((res, rej) => {
