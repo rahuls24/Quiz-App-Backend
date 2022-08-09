@@ -1,21 +1,22 @@
-import { httpStatusCode } from './../utils/responseHandler';
+import { NextFunction, Response } from 'express';
+import { QuizTimeTracker } from '../models/quizTimeTracker';
+import { createAnError } from '../utils/errorHandler';
 import {
     calculateMarks,
     calculateNumberOfRightWrongAnswersAndSkippedQuestion,
-    normalizeQuestionData,
     differenceFromNowInMinutes,
+    isUserAlreadyGivenQuiz,
+    normalizeQuestionData,
 } from '../utils/quizFunctions';
-import { Quiz } from './../models/quiz';
-import { Question } from './../models/question';
-import { NextFunction, Response } from 'express';
-import { createAnError } from '../utils/errorHandler';
 import {
     isValidMongoObjectId,
     isValidQuestionData,
     isValidSubmittedQuestions,
 } from '../utils/validators';
 import { RequestForProtectedRoute } from './../interfaces/common';
-import { QuizTimeTracker } from '../models/quizTimeTracker';
+import { Question } from './../models/question';
+import { Quiz } from './../models/quiz';
+import { httpStatusCode } from './../utils/responseHandler';
 
 export async function saveQuestionsForTheQuiz(
     req: RequestForProtectedRoute,
@@ -32,14 +33,14 @@ export async function saveQuestionsForTheQuiz(
         )
             throw createAnError(
                 'Payload is not in required format. Please check and try again',
-                400
+                httpStatusCode.badRequest
             );
         const questionsList = await Question.insertMany(questionsData);
         if (!questionsList)
             throw createAnError(
                 'Something went wrong while saving the questions into db. Please try again'
             );
-        res.status(201).json({
+        res.status(httpStatusCode.created).json({
             status: 'success',
             questions: questionsList,
         });
@@ -63,9 +64,18 @@ export async function getAllQuestionsOfAQuiz(
             _id: 0,
             enrolledBy: 1,
             createdBy: 1,
+            marks: 1,
         });
-        if (!quizData || quizData?.length === 0)
-            throw createAnError('Quiz is not found in db', 404);
+        if (!quizData)
+            throw createAnError(
+                'Quiz is not found in db',
+                httpStatusCode.notFound
+            );
+        if (isUserAlreadyGivenQuiz(quizData?.marks, user._id))
+            throw createAnError(
+                'User already given this quiz',
+                httpStatusCode.forbidden
+            );
         // Hiding questions if user is not enrolled to current quiz
         if (user.role === 'examinee') {
             if (!quizData?.enrolledBy?.includes(user._id))
@@ -96,11 +106,11 @@ export async function getAllQuestionsOfAQuiz(
             });
         }
         if (shouldOnlyGiveTotalNoOfQuestion)
-            return res.status(200).json({
+            return res.status(httpStatusCode.ok).json({
                 status: 'success',
                 totalQuestions: questionsList?.length,
             });
-        return res.status(200).json({
+        return res.status(httpStatusCode.ok).json({
             status: 'success',
             questions: questionsList,
         });
@@ -115,14 +125,14 @@ export async function submitQuizHandler(
     next: NextFunction
 ) {
     const quizId = req.body.quizId ?? '';
-    const submittedQuestion = req.body.submittedQuestion;
+    const submittedQuestions = req.body.submittedQuestions;
     const user = req.user;
     try {
         if (!isValidMongoObjectId(quizId))
             throw createAnError('Please give a valid quiz id', 400);
-        if (!isValidSubmittedQuestions(submittedQuestion))
+        if (!isValidSubmittedQuestions(submittedQuestions))
             throw createAnError(
-                'Something wrong with submittedQuestion obj',
+                'Something wrong with submittedQuestions obj',
                 400
             );
         let getQuestionList = Question.find(
@@ -138,20 +148,32 @@ export async function submitQuizHandler(
             quizId: quizId,
             startedBy: user._id,
         });
+
         let questionsList = await getQuestionList;
         let quizTimeDetails = await getQuizTimeDetails;
+        if (questionsList?.length === 0)
+            throw createAnError(
+                'Something went wrong while fetching questions from DB'
+            );
+        if (!quizTimeDetails)
+            throw createAnError(
+                'Something went wrong while getting quiz start time'
+            );
         let totalTimeTaken = differenceFromNowInMinutes(
             quizTimeDetails?.startedAt
         );
         const normalizeQuestionsDataFromDB =
             normalizeQuestionData(questionsList);
         const normalizeQuestionsDataFromReqObj =
-            normalizeQuestionData(submittedQuestion);
-        const [numberOfRightAnswers, numberOfWrongAnswers, skippedQuestions] =
-            calculateNumberOfRightWrongAnswersAndSkippedQuestion(
-                normalizeQuestionsDataFromDB,
-                normalizeQuestionsDataFromReqObj
-            );
+            normalizeQuestionData(submittedQuestions);
+        const [
+            numberOfRightAnswers,
+            numberOfWrongAnswers,
+            numberSkippedQuestions,
+        ] = calculateNumberOfRightWrongAnswersAndSkippedQuestion(
+            normalizeQuestionsDataFromDB,
+            normalizeQuestionsDataFromReqObj
+        );
         // Default marks will be 1 per correct answer
         const totalMarks = calculateMarks(
             numberOfRightAnswers,
@@ -176,9 +198,10 @@ export async function submitQuizHandler(
         res.status(httpStatusCode.ok).json({
             status: 'success',
             result: {
+                marks: totalMarks,
                 numberOfRightAnswers: numberOfRightAnswers,
                 numberOfWrongAnswers: numberOfWrongAnswers,
-                skippedQuestions: skippedQuestions,
+                numberSkippedQuestions: numberSkippedQuestions,
                 totalTimeTaken: totalTimeTaken,
             },
         });

@@ -1,50 +1,56 @@
 import { Router } from 'express';
 import passport from 'passport';
 import {
-	saveQuiz,
-	getAllQuizzesForExaminers,
-	enrollAExamineeInAQuiz,
-	getAllQuizzesForCurrentUser,
-	getAllUnEnrolledQuizForCurrentUser,
-	saveQuizStartTime,
-	getQuizStartTime,
+    enrollAExamineeInAQuiz,
+    getAllQuizzesForCurrentUser,
+    getAllQuizzesForExaminers,
+    getAllUnEnrolledQuizForCurrentUser,
+    getQuizStartTime,
+    getQuizzesHistory,
+    saveQuiz,
+    saveQuizStartTime,
 } from '../controllers/quiz';
 export const router = Router();
 
 router.post(
-	'/save-a-quiz',
-	passport.authenticate('examiner', { session: false }),
-	saveQuiz,
+    '/save-a-quiz',
+    passport.authenticate('examiner', { session: false }),
+    saveQuiz
 );
 router.post(
-	'/get-quizzes-of-examiners',
-	passport.authenticate('user', { session: false }),
-	getAllQuizzesForExaminers,
+    '/get-quizzes-of-examiners',
+    passport.authenticate('user', { session: false }),
+    getAllQuizzesForExaminers
 );
 router.get(
-	'/get-all-enrolled-quizzes',
-	passport.authenticate('user', { session: false }),
-	getAllQuizzesForCurrentUser,
+    '/get-all-enrolled-quizzes',
+    passport.authenticate('user', { session: false }),
+    getAllQuizzesForCurrentUser
 );
 router.get(
-	'/get-all-unenrolled-quizzes',
-	passport.authenticate('user', { session: false }),
-	getAllUnEnrolledQuizForCurrentUser,
+    '/get-all-unenrolled-quizzes',
+    passport.authenticate('user', { session: false }),
+    getAllUnEnrolledQuizForCurrentUser
 );
 router.post(
-	'/enroll-for-a-quiz',
-	passport.authenticate('examinee', { session: false }),
-	enrollAExamineeInAQuiz,
+    '/enroll-for-a-quiz',
+    passport.authenticate('examinee', { session: false }),
+    enrollAExamineeInAQuiz
 );
 
 router.post(
-	'/save-start-time',
-	passport.authenticate('examinee', { session: false }),
-	saveQuizStartTime,
+    '/save-start-time',
+    passport.authenticate('examinee', { session: false }),
+    saveQuizStartTime
 );
 
 router.get(
-	'/get-quiz-start-time/:quizId',
-	passport.authenticate('examinee', { session: false }),
-	getQuizStartTime,
+    '/get-quiz-start-time/:quizId',
+    passport.authenticate('examinee', { session: false }),
+    getQuizStartTime
+);
+router.get(
+    '/get-quizzes-history',
+    passport.authenticate('examinee', { session: false }),
+    getQuizzesHistory
 );

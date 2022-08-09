@@ -1,5 +1,5 @@
-import { AreBothArraysEqual } from './validators';
 import differenceInMinutes from 'date-fns/differenceInMinutes';
+import { AreBothArraysEqual } from './validators';
 type questionsListType = {
     _id: string;
     answers: Array<string>;
@@ -32,19 +32,21 @@ export function calculateNumberOfRightWrongAnswersAndSkippedQuestion(
 ) {
     let correctAnswerCount = 0;
     let wrongAnswerCount = 0;
-    let skippedQuestions = 0;
+    let numberSkippedQuestions = 0;
     for (const questionId in questionsFromDB) {
-        if (
-            AreBothArraysEqual(
-                questionsFromDB[questionId],
-                questionFromReq[questionId]
+        if (questionId in questionsFromDB && questionId in questionFromReq) {
+            if (
+                AreBothArraysEqual(
+                    questionsFromDB[questionId],
+                    questionFromReq[questionId]
+                )
             )
-        )
-            correctAnswerCount++;
-        else if (questionFromReq[questionId].length > 0) wrongAnswerCount++;
-        else skippedQuestions++;
+                correctAnswerCount++;
+            else if (questionFromReq[questionId].length > 0) wrongAnswerCount++;
+            else numberSkippedQuestions++;
+        } else throw new Error('Something went wrong');
     }
-    return [correctAnswerCount, wrongAnswerCount, skippedQuestions];
+    return [correctAnswerCount, wrongAnswerCount, numberSkippedQuestions];
 }
 
 export function calculateMarks(
@@ -67,4 +69,14 @@ export function calculateMarks(
 export function differenceFromNowInMinutes(time = new Date()) {
     const now = new Date();
     return differenceInMinutes(now, time);
+}
+export function isUserAlreadyGivenQuiz(marksList: any, userId: any) {
+    let flag = false;
+    if (Array.isArray(marksList)) {
+        marksList.forEach((marks) => {
+            if (marks?.examineeId?.toString() === userId?.toString())
+                return (flag = true);
+        });
+    }
+    return flag;
 }
