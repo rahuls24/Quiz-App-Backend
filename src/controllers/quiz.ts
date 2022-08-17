@@ -1,10 +1,19 @@
 import { NextFunction, Response } from 'express';
 import { RequestForProtectedRoute } from '../interfaces/common';
+import { Question } from '../models/question';
 import { createAnError, createFailureResponseObj } from '../utils/errorHandler';
+import {
+    calculateMarks,
+    calculateNumberOfRightWrongAnswersAndSkippedQuestion,
+    differenceFromNowInMinutes,
+    getCurrentUserMarks,
+    normalizeQuestionData,
+} from '../utils/quizFunctions';
 import { responseHandler } from '../utils/responseHandler';
 import {
     AreEveryThingsComingInSaveQuizReqBody,
     isValidMongoObjectId,
+    isValidSubmittedQuestions,
 } from '../utils/validators';
 import { Quiz } from './../models/quiz';
 import { QuizTimeTracker } from './../models/quizTimeTracker';
@@ -301,7 +310,7 @@ export async function getQuizzesHistory(
 ) {
     const currentUser = req.user;
     try {
-        const quizzesDetails = await Quiz.find(
+        const rawQuizzesDetails = await Quiz.find(
             {
                 $and: [
                     { enrolledBy: currentUser._id },
@@ -310,6 +319,18 @@ export async function getQuizzesHistory(
             },
             { _id: 1, marks: 1, name: 1, quizDuration: 1 }
         );
+        const quizzesDetails = rawQuizzesDetails.map((quiz) => {
+            return {
+                quizId: quiz._id,
+                quizName: quiz.name,
+                quizDuration: quiz.quizDuration,
+                quizResult: getCurrentUserMarks(
+                    quiz.marks,
+                    currentUser._id.toString()
+                ),
+            };
+        });
+
         return res.status(httpStatusCode.ok).json({
             status: 'success',
             quizzesDetails: quizzesDetails,
@@ -319,6 +340,97 @@ export async function getQuizzesHistory(
     }
 }
 
+export async function submitQuizHandler(
+    req: RequestForProtectedRoute,
+    res: Response,
+    next: NextFunction
+) {
+    const quizId = req.body.quizId ?? '';
+    const submittedQuestions = req.body.submittedQuestions;
+    const user = req.user;
+    try {
+        if (!isValidMongoObjectId(quizId))
+            throw createAnError('Please give a valid quiz id', 400);
+        if (!isValidSubmittedQuestions(submittedQuestions))
+            throw createAnError(
+                'Something wrong with submittedQuestions obj',
+                400
+            );
+        let getQuestionList = Question.find(
+            {
+                quizzes: { $in: [quizId] },
+            },
+            {
+                _id: 1,
+                answers: 1,
+            }
+        );
+        let getQuizTimeDetails = QuizTimeTracker.findOne({
+            quizId: quizId,
+            startedBy: user._id,
+        });
+
+        let questionsList = await getQuestionList;
+        let quizTimeDetails = await getQuizTimeDetails;
+        if (questionsList?.length === 0)
+            throw createAnError(
+                'Something went wrong while fetching questions from DB'
+            );
+        if (!quizTimeDetails)
+            throw createAnError(
+                'Something went wrong while getting quiz start time'
+            );
+        let totalTimeTaken = differenceFromNowInMinutes(
+            quizTimeDetails?.startedAt
+        );
+        const normalizeQuestionsDataFromDB =
+            normalizeQuestionData(questionsList);
+        const normalizeQuestionsDataFromReqObj =
+            normalizeQuestionData(submittedQuestions);
+        const [
+            numberOfRightAnswers,
+            numberOfWrongAnswers,
+            numberSkippedQuestions,
+        ] = calculateNumberOfRightWrongAnswersAndSkippedQuestion(
+            normalizeQuestionsDataFromDB,
+            normalizeQuestionsDataFromReqObj
+        );
+        // Default marks will be 1 per correct answer
+        const totalMarks = calculateMarks(
+            numberOfRightAnswers,
+            numberOfWrongAnswers,
+            1
+        );
+        const marksPayload = {
+            marks: totalMarks,
+            examineeId: user._id,
+            numberOfRightAnswers,
+            numberOfWrongAnswers,
+            totalTimeTaken,
+            numberSkippedQuestions: numberSkippedQuestions,
+        };
+        const updatedQuiz = await Quiz.findByIdAndUpdate(quizId, {
+            $push: { marks: marksPayload },
+        });
+        if (!updatedQuiz)
+            throw createAnError(
+                'Something went wrong while saving the marks into db. Please try again'
+            );
+
+        res.status(httpStatusCode.ok).json({
+            status: 'success',
+            result: {
+                marks: totalMarks,
+                numberOfRightAnswers: numberOfRightAnswers,
+                numberOfWrongAnswers: numberOfWrongAnswers,
+                numberSkippedQuestions: numberSkippedQuestions,
+                totalTimeTaken: totalTimeTaken,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+}
 function delayForGivenTime(time: number) {
     return new Promise((res, rej) => {
         setTimeout(() => {

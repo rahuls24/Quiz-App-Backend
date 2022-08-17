@@ -80,3 +80,7 @@ export function isUserAlreadyGivenQuiz(marksList: any, userId: any) {
     }
     return flag;
 }
+
+export function getCurrentUserMarks(marksList: any[], userId: string) {
+    return marksList.find((marks) => marks?.examineeId?.toString() === userId);
+}

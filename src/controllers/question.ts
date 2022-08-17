@@ -1,18 +1,7 @@
 import { NextFunction, Response } from 'express';
-import { QuizTimeTracker } from '../models/quizTimeTracker';
 import { createAnError } from '../utils/errorHandler';
-import {
-    calculateMarks,
-    calculateNumberOfRightWrongAnswersAndSkippedQuestion,
-    differenceFromNowInMinutes,
-    isUserAlreadyGivenQuiz,
-    normalizeQuestionData,
-} from '../utils/quizFunctions';
-import {
-    isValidMongoObjectId,
-    isValidQuestionData,
-    isValidSubmittedQuestions,
-} from '../utils/validators';
+import { isUserAlreadyGivenQuiz } from '../utils/quizFunctions';
+import { isValidMongoObjectId, isValidQuestionData } from '../utils/validators';
 import { RequestForProtectedRoute } from './../interfaces/common';
 import { Question } from './../models/question';
 import { Quiz } from './../models/quiz';
@@ -119,96 +108,6 @@ export async function getAllQuestionsOfAQuiz(
     }
 }
 
-export async function submitQuizHandler(
-    req: RequestForProtectedRoute,
-    res: Response,
-    next: NextFunction
-) {
-    const quizId = req.body.quizId ?? '';
-    const submittedQuestions = req.body.submittedQuestions;
-    const user = req.user;
-    try {
-        if (!isValidMongoObjectId(quizId))
-            throw createAnError('Please give a valid quiz id', 400);
-        if (!isValidSubmittedQuestions(submittedQuestions))
-            throw createAnError(
-                'Something wrong with submittedQuestions obj',
-                400
-            );
-        let getQuestionList = Question.find(
-            {
-                quizzes: { $in: [quizId] },
-            },
-            {
-                _id: 1,
-                answers: 1,
-            }
-        );
-        let getQuizTimeDetails = QuizTimeTracker.findOne({
-            quizId: quizId,
-            startedBy: user._id,
-        });
-
-        let questionsList = await getQuestionList;
-        let quizTimeDetails = await getQuizTimeDetails;
-        if (questionsList?.length === 0)
-            throw createAnError(
-                'Something went wrong while fetching questions from DB'
-            );
-        if (!quizTimeDetails)
-            throw createAnError(
-                'Something went wrong while getting quiz start time'
-            );
-        let totalTimeTaken = differenceFromNowInMinutes(
-            quizTimeDetails?.startedAt
-        );
-        const normalizeQuestionsDataFromDB =
-            normalizeQuestionData(questionsList);
-        const normalizeQuestionsDataFromReqObj =
-            normalizeQuestionData(submittedQuestions);
-        const [
-            numberOfRightAnswers,
-            numberOfWrongAnswers,
-            numberSkippedQuestions,
-        ] = calculateNumberOfRightWrongAnswersAndSkippedQuestion(
-            normalizeQuestionsDataFromDB,
-            normalizeQuestionsDataFromReqObj
-        );
-        // Default marks will be 1 per correct answer
-        const totalMarks = calculateMarks(
-            numberOfRightAnswers,
-            numberOfWrongAnswers,
-            1
-        );
-        const marksPayload = {
-            marks: totalMarks,
-            examineeId: user._id,
-            numberOfRightAnswers,
-            numberOfWrongAnswers,
-            totalTimeTaken,
-        };
-        const updatedQuiz = await Quiz.findByIdAndUpdate(quizId, {
-            $push: { marks: marksPayload },
-        });
-        if (!updatedQuiz)
-            throw createAnError(
-                'Something went wrong while saving the marks into db. Please try again'
-            );
-
-        res.status(httpStatusCode.ok).json({
-            status: 'success',
-            result: {
-                marks: totalMarks,
-                numberOfRightAnswers: numberOfRightAnswers,
-                numberOfWrongAnswers: numberOfWrongAnswers,
-                numberSkippedQuestions: numberSkippedQuestions,
-                totalTimeTaken: totalTimeTaken,
-            },
-        });
-    } catch (error) {
-        next(error);
-    }
-}
 // NEED TO DELATE
 function delayForGivenTime(time: number) {
     return new Promise((res, rej) => {

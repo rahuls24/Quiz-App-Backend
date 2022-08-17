@@ -9,6 +9,7 @@ import {
     getQuizzesHistory,
     saveQuiz,
     saveQuizStartTime,
+    submitQuizHandler,
 } from '../controllers/quiz';
 export const router = Router();
 
@@ -48,6 +49,11 @@ router.get(
     '/get-quiz-start-time/:quizId',
     passport.authenticate('examinee', { session: false }),
     getQuizStartTime
+);
+router.post(
+    '/submit-quiz',
+    passport.authenticate('examinee', { session: false }),
+    submitQuizHandler
 );
 router.get(
     '/get-quizzes-history',
