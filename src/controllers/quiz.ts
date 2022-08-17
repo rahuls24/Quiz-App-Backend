@@ -7,13 +7,13 @@ import {
     calculateNumberOfRightWrongAnswersAndSkippedQuestion,
     differenceFromNowInMinutes,
     getCurrentUserMarks,
-    normalizeQuestionData,
+    normalizeQuestionData
 } from '../utils/quizFunctions';
 import { responseHandler } from '../utils/responseHandler';
 import {
     AreEveryThingsComingInSaveQuizReqBody,
     isValidMongoObjectId,
-    isValidSubmittedQuestions,
+    isValidSubmittedQuestions
 } from '../utils/validators';
 import { Quiz } from './../models/quiz';
 import { QuizTimeTracker } from './../models/quizTimeTracker';
@@ -124,7 +124,10 @@ async function getAllQuizForCurrentExaminee(
     const currentExamineeId = user._id;
     try {
         const quizzes = await Quiz.find({
-            enrolledBy: { $in: [currentExamineeId] },
+            $and: [
+                { enrolledBy: { $in: [currentExamineeId] } },
+                { 'marks.examineeId': { $ne: currentExamineeId } },
+            ],
         });
         if (!quizzes)
             throw createAnError(
@@ -308,6 +311,7 @@ export async function getQuizzesHistory(
     res: Response,
     next: NextFunction
 ) {
+    // throw new Error('Rahul is throwing some error');
     const currentUser = req.user;
     try {
         const rawQuizzesDetails = await Quiz.find(

@@ -1,6 +1,11 @@
 /dist
 /node_modules
-**/config
 **/.env
 package-lock.json
 data-modal.txt
+/logs
+# Swagger docs Related
+swagger-output.json
+swagger.js
+#vs code settings
+settings.json
