@@ -7,13 +7,13 @@ import {
     calculateNumberOfRightWrongAnswersAndSkippedQuestion,
     differenceFromNowInMinutes,
     getCurrentUserMarks,
-    normalizeQuestionData
+    normalizeQuestionData,
 } from '../utils/quizFunctions';
 import { responseHandler } from '../utils/responseHandler';
 import {
     AreEveryThingsComingInSaveQuizReqBody,
     isValidMongoObjectId,
-    isValidSubmittedQuestions
+    isValidSubmittedQuestions,
 } from '../utils/validators';
 import { Quiz } from './../models/quiz';
 import { QuizTimeTracker } from './../models/quizTimeTracker';
@@ -149,6 +149,7 @@ export async function enrollAExamineeInAQuiz(
     next: NextFunction
 ) {
     const user = req.user;
+    const userId: any = user._id;
     let quizId = req.body.quizId;
     if (!isValidMongoObjectId(quizId)) {
         let resObj = createFailureResponseObj('Please send a valid quiz id');
@@ -156,9 +157,9 @@ export async function enrollAExamineeInAQuiz(
     }
     try {
         // TODO: Add logic to handle paid quizzes.
-        const updatedQuiz = await Quiz.updateOne(
+        const updatedQuiz: any = await Quiz.updateOne(
             { _id: quizId },
-            { $addToSet: { enrolledBy: user._id } }
+            { $addToSet: { enrolledBy: userId } }
         );
 
         if (updatedQuiz.modifiedCount === 0) {
@@ -360,7 +361,7 @@ export async function submitQuizHandler(
                 'Something wrong with submittedQuestions obj',
                 400
             );
-        let getQuestionList = Question.find(
+        let getQuestionList: any = Question.find(
             {
                 quizzes: { $in: [quizId] },
             },
@@ -369,13 +370,13 @@ export async function submitQuizHandler(
                 answers: 1,
             }
         );
-        let getQuizTimeDetails = QuizTimeTracker.findOne({
+        let getQuizTimeDetails: any = QuizTimeTracker.findOne({
             quizId: quizId,
             startedBy: user._id,
         });
 
-        let questionsList = await getQuestionList;
-        let quizTimeDetails = await getQuizTimeDetails;
+        let questionsList: any = await getQuestionList;
+        let quizTimeDetails: any = await getQuizTimeDetails;
         if (questionsList?.length === 0)
             throw createAnError(
                 'Something went wrong while fetching questions from DB'
@@ -413,7 +414,7 @@ export async function submitQuizHandler(
             totalTimeTaken,
             numberSkippedQuestions: numberSkippedQuestions,
         };
-        const updatedQuiz = await Quiz.findByIdAndUpdate(quizId, {
+        const updatedQuiz: any = await Quiz.findByIdAndUpdate(quizId, {
             $push: { marks: marksPayload },
         });
         if (!updatedQuiz)

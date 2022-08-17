@@ -49,7 +49,7 @@ export async function getAllQuestionsOfAQuiz(
     try {
         if (!isValidMongoObjectId(quizId))
             throw createAnError('Please give a valid quiz id', 400);
-        const quizData = await Quiz.findById(quizId, {
+        let quizData:any= await Quiz.findById(quizId, {
             _id: 0,
             enrolledBy: 1,
             createdBy: 1,
@@ -67,10 +67,10 @@ export async function getAllQuestionsOfAQuiz(
             );
         // Hiding questions if user is not enrolled to current quiz
         if (user.role === 'examinee') {
-            if (!quizData?.enrolledBy?.includes(user._id))
+            if (!quizData.enrolledBy.includes(user._id))
                 shouldOnlyGiveTotalNoOfQuestion = true;
         }
-        let questionsList = await Question.find(
+        let questionsList:any = await Question.find(
             {
                 quizzes: { $in: [quizId] },
             },
@@ -90,7 +90,7 @@ export async function getAllQuestionsOfAQuiz(
             );
         // Hiding the answer if user is not owner of the quiz
         if (quizData?.createdBy?.toString() !== user._id?.toString()) {
-            questionsList = questionsList?.map((question) => {
+            questionsList = questionsList?.map((question:any) => {
                 return { ...question?._doc, answers: [] };
             });
         }
