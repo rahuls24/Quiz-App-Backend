@@ -6,7 +6,7 @@ const { combine, timestamp, json, colorize } = format;
 const logtail = new Logtail(process.env.logtailToken);
 
 export const logger = createLogger({
-    level: 'error',
+    level: 'info',
     format: combine(
         timestamp({
             format: 'YYYY-MM-DD hh:mm:ss.SSS A',
