@@ -88,7 +88,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Bearer Token is successfully generated.",
+            "description": "User is created successfully.",
             "schema": {
               "type": "object",
               "properties": {
@@ -119,7 +119,30 @@
                   "example": "fail"
                 },
                 "error": {
-                  "$ref": "#/definitions/BadRequestForEmailRegister"
+                  "$ref": "#/definitions/BadRequestForCreateUserWithEmailAndPassword"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "When there is something wrong with server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong while saving the user into db"
                 }
               },
               "required": [
@@ -199,7 +222,30 @@
                   "example": "fail"
                 },
                 "error": {
-                  "$ref": "#/definitions/BadRequestForEmailLogin"
+                  "$ref": "#/definitions/BadRequestForSigninWithEmailAndPassword"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "401": {
+            "description": "When password is incorrect",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Password is not correct"
                 }
               },
               "required": [
@@ -421,36 +467,257 @@
     },
     "/api/question/save-questions": {
       "post": {
-        "description": "",
+        "tags": [
+          "Question"
+        ],
+        "description": "Endpoint to save a question in the db",
         "parameters": [
           {
-            "name": "body",
+            "name": "obj",
             "in": "body",
+            "description": "Question Data",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
-                "questionsData": {
-                  "example": "any"
+                "questionText": {
+                  "type": "string",
+                  "example": "Question Title"
+                },
+                "questionType": {
+                  "$ref": "#/definitions/QuestionType"
+                },
+                "quizzes": {
+                  "type": "array",
+                  "example": [
+                    "629ca5720cf3c0efda1644b2"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "options": {
+                  "type": "array",
+                  "example": [
+                    "option 1",
+                    "option 2"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "answers": {
+                  "type": "array",
+                  "example": [
+                    "0",
+                    "1"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
                 }
-              }
+              },
+              "required": [
+                "questionText",
+                "questionType",
+                "quizzes",
+                "options",
+                "answers"
+              ]
             }
           }
         ],
-        "responses": {}
+        "responses": {
+          "201": {
+            "description": "Questions are saved successfully.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "When there is something wrong with request body.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Payload is not in required format. Please check and try again"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "When there is something with server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong while saving the questions into db. Please try again"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
       }
     },
     "/api/question/get-all-questions/{quizId}": {
       "get": {
-        "description": "",
+        "tags": [
+          "Question"
+        ],
+        "description": "Endpoint to getting all the questions of a quiz",
         "parameters": [
           {
             "name": "quizId",
             "in": "path",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "quizId",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Quiz ID for which you want to retrieve all its questions"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "Questions are saved successfully.     There will be 3 type of responses on basis of role and owner of the quiz.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "questions": {
+                  "$ref": "#/definitions/Question"
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "When quiz id is a valid quiz id",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Please give a valid quiz id"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "When quiz id is not found in db",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Quiz is not found in db"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "When there is something with server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong while fetching questions from DB"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
       }
     }
   },
@@ -482,16 +749,69 @@
         }
       }
     },
-    "BadRequestForEmailLogin": {
+    "QuestionType": {
+      "type": "string",
+      "enum": [
+        "multipleAnswer",
+        "multipleAnswer"
+      ]
+    },
+    "Question": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string",
+          "example": "62b6f8dfedb16962f3d5e7f3"
+        },
+        "questionText": {
+          "type": "string",
+          "example": "Qestion Title"
+        },
+        "questionType": {
+          "type": "string",
+          "example": "singleAnswer"
+        },
+        "quizzes": {
+          "type": "array",
+          "example": [
+            "62b6f86dedb16962f3d5e7ee"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "options": {
+          "type": "array",
+          "example": [
+            "option 1 ",
+            "option 2",
+            "option 4",
+            "option 3"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "answers": {
+          "type": "array",
+          "example": [
+            "2"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "BadRequestForSigninWithEmailAndPassword": {
       "type": "string",
       "enum": [
         "Please provide value for all the parameter",
         "Please provide a valid email",
-        "Password should be of minimum 6 characters",
-        "Password is not correct"
+        "Password should be of minimum 6 characters"
       ]
     },
-    "BadRequestForEmailRegister": {
+    "BadRequestForCreateUserWithEmailAndPassword": {
       "type": "string",
       "enum": [
         "Please provide value for all the parameter",

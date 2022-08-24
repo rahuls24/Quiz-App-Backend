@@ -38,15 +38,25 @@ const doc = {
 			},
 			isVerified: false
 		},
-		BadRequestForEmailLogin: {
+		QuestionType: {
+			'@enum': ['multipleAnswer', 'multipleAnswer']
+		},
+		Question: {
+			_id: '62b6f8dfedb16962f3d5e7f3',
+			questionText: 'Qestion Title',
+			questionType: 'singleAnswer',
+			quizzes: ['62b6f86dedb16962f3d5e7ee'],
+			options: ['option 1 ', 'option 2', 'option 4', 'option 3'],
+			answers: ['2']
+		},
+		BadRequestForSigninWithEmailAndPassword: {
 			'@enum': [
 				'Please provide value for all the parameter',
 				'Please provide a valid email',
-				'Password should be of minimum 6 characters',
-				'Password is not correct'
+				'Password should be of minimum 6 characters'
 			]
 		},
-		BadRequestForEmailRegister: {
+		BadRequestForCreateUserWithEmailAndPassword: {
 			'@enum': [
 				'Please provide value for all the parameter',
 				'Please provide a valid email',

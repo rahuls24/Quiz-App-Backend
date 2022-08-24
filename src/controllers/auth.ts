@@ -12,7 +12,6 @@ import {
 	isValidReqBodyComingFromEmailLogin
 } from '../utils/validators';
 import { RequestForProtectedRoute } from './../interfaces/common';
-let swagger: any = {};
 export async function createUserWithEmailAndPassword(
 	req: Request,
 	res: Response
@@ -54,7 +53,7 @@ export async function createUserWithEmailAndPassword(
 		}
 		throw createAnError(
 			'Something went wrong while saving the user into db',
-			httpStatusCode.badRequest
+			httpStatusCode.internalServerError
 		);
 	} catch (error) {
 		return errorHandlerOfRequestCatchBlock(res, error);
@@ -79,7 +78,7 @@ export async function createUserWithEmailAndPassword(
 		};
 
 		#swagger.responses[200] = {
-			description: 'Bearer Token is successfully generated.',
+			description: 'User is created successfully.',
 			schema: {
 				$status: 'success',
 				$user: { $ref: '#/definitions/User' }
@@ -90,7 +89,14 @@ export async function createUserWithEmailAndPassword(
 			description: 'When there is something wrong with request body.',
 			schema: {
 				$status: 'fail',
-				$error: { $ref: '#/definitions/BadRequestForEmailRegister' }
+				$error: { $ref: '#/definitions/BadRequestForCreateUserWithEmailAndPassword' }
+			}
+		}; 
+		#swagger.responses[500] = {
+			description: 'When there is something wrong with server',
+			schema: {
+				$status: 'fail',
+				$error: 'Something went wrong while saving the user into db',
 			}
 		}; */
 	}
@@ -127,7 +133,7 @@ export async function signinWithEmailAndPassword(
 		if (!isPasswordMatch)
 			throw createAnError(
 				'Password is not correct',
-				httpStatusCode.badRequest
+				httpStatusCode.unauthorized
 			);
 
 		const userDataForHash = {
@@ -182,7 +188,14 @@ export async function signinWithEmailAndPassword(
                 description: 'When there is something wrong with request body.',
                 schema: {
                     $status: 'fail',
-                    $error: { $ref: '#/definitions/BadRequestForEmailLogin' },
+                    $error: { $ref: '#/definitions/BadRequestForSigninWithEmailAndPassword' },
+                },
+            };
+            #swagger.responses[401] = {
+                description: 'When password is incorrect',
+                schema: {
+                    $status: 'fail',
+                    $error: 'Password is not correct',
                 },
             };
         */
