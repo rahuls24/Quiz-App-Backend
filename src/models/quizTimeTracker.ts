@@ -4,18 +4,18 @@ const quizTimeTrackerSchema = new Schema<IQuizTimeTracker>({
 	quizId: {
 		type: Schema.Types.ObjectId,
 		ref: 'Quiz',
-		required: true,
+		required: true
 	},
 	startedAt: {
 		type: Date,
-		default:Date.now
+		default: Date.now
 	},
 	startedBy: {
 		type: Schema.Types.ObjectId,
 		ref: 'User',
-		required: true,
-	},
+		required: true
+	}
 });
-quizTimeTrackerSchema.index({ startedAt: 1 }, { expireAfterSeconds: 120*60 });
+quizTimeTrackerSchema.index({ startedAt: 1 }, { expireAfterSeconds: 120 * 60 });
 
 export const QuizTimeTracker = model('QuizTimeTracker', quizTimeTrackerSchema);

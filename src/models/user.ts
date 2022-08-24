@@ -5,9 +5,9 @@ const userSchema = new Schema({
 		type: String,
 		validate: {
 			validator: (name: string) => name.length > 2,
-			message: 'Name should be greater than 2 characters',
+			message: 'Name should be greater than 2 characters'
 		},
-		required: true,
+		required: true
 	},
 	email: {
 		type: String,
@@ -15,34 +15,34 @@ const userSchema = new Schema({
 			validator: (rawEmail: string) => isValidEmail(rawEmail),
 			message: (props: any) => {
 				return `${props.value}  is not a valid email address!`;
-			},
+			}
 		},
-		required: true,
+		required: true
 	},
 	password: {
 		type: String,
-		required: true,
+		required: true
 	},
 	phone: {
-		type: String,
+		type: String
 	},
 	role: {
 		type: String,
 		required: true,
 		enum: {
 			values: ['examiner', 'examinee', 'admin'],
-			message: '{VALUE} is not supported in User role',
-		},
+			message: '{VALUE} is not supported in User role'
+		}
 	},
 	registerOn: {
 		type: Date,
-		default: Date.now,
+		default: Date.now
 	},
 	isVerified: {
 		type: Boolean,
-		default: false,
-	},
+		default: false
+	}
 });
 // Creating index base on email
-userSchema.index({email:1},{unique:true})
+userSchema.index({ email: 1 }, { unique: true });
 export const User = model('User', userSchema);
