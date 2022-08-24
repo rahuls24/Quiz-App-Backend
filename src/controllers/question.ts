@@ -7,7 +7,7 @@ import { RequestForProtectedRoute } from './../interfaces/common';
 import { Question } from './../models/question';
 import { Quiz } from './../models/quiz';
 import { httpStatusCode } from './../utils/responseHandler';
-let swagger: any = {};
+
 export async function saveQuestionsForTheQuiz(
 	req: RequestForProtectedRoute,
 	res: Response,
@@ -32,7 +32,7 @@ export async function saveQuestionsForTheQuiz(
 				'Something went wrong while saving the questions into db. Please try again'
 			);
 		res.status(httpStatusCode.created).json({
-			status: 'success'
+			status: 'success',
 		});
 	} catch (error) {
 		next(error);
@@ -104,7 +104,7 @@ export async function getAllQuestionsOfAQuiz(
 			_id: 0,
 			enrolledBy: 1,
 			createdBy: 1,
-			marks: 1
+			marks: 1,
 		}).lean();
 		if (!quizData)
 			throw createAnError(
@@ -127,7 +127,7 @@ export async function getAllQuestionsOfAQuiz(
 		}
 		let questionsList = await Question.find(
 			{
-				quizzes: { $in: [quizId] }
+				quizzes: { $in: [quizId] },
 			},
 			{
 				_id: 1,
@@ -135,7 +135,7 @@ export async function getAllQuestionsOfAQuiz(
 				questionType: 1,
 				options: 1,
 				answers: 1,
-				images: 1
+				images: 1,
 			}
 		).lean();
 
@@ -152,14 +152,16 @@ export async function getAllQuestionsOfAQuiz(
 		if (shouldOnlyGiveTotalNoOfQuestion)
 			return res.status(httpStatusCode.ok).json({
 				status: 'success',
-				totalQuestions: questionsList.length
+				totalQuestions: questionsList.length,
 			});
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			questions: questionsList
+			questions: questionsList,
 		});
 	} catch (error) {
 		next(error);
+		//--------------Implementaion part is done ---------------------
+
 		//! Swagger docs
 		/*
 		#swagger.tags = ['Question'];
@@ -214,6 +216,7 @@ export async function getAllQuestionsOfAQuiz(
 }
 
 // It is required only for testing
+
 // function delayForGivenTime(time: number) {
 // 	return new Promise((res, rej) => {
 // 		setTimeout(() => {

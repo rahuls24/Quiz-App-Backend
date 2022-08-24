@@ -56,22 +56,22 @@ export function isValidReqBodyComingFromEmailLogin(
 	if (reqUser.password.length < 6)
 		return [false, 'Password should be of minimum 6 characters'];
 }
+type ReqQuizFromSaveQuiz = {
+	name: string;
+	topics: string;
+	createdBy: string;
+	enrolledBy: Array<string>;
+	quizDuration: string;
+};
 
-export function AreEveryThingsComingInEmailRegisterReqBody(
-	reqUser: any
-): boolean {
-	if (!reqUser.name) return false;
-	if (!reqUser.email) return false;
-	if (!reqUser.role) return false;
-	if (!reqUser.password) return false;
-	return true;
-}
-export function AreEveryThingsComingInEmailSigninReqBody(
-	reqUser: any
-): boolean {
-	if (!reqUser.email) return false;
-	if (!reqUser.password) return false;
-	return true;
+export function isValidReqBodyComingFromSaveQuiz(
+	reqQuiz: ReqQuizFromSaveQuiz
+): [boolean, string] {
+	if (reqQuiz.name.length < 0) return [false, 'Please provide quiz name'];
+	if (reqQuiz.topics.length === 0)
+		return [false, 'Quiz topic should have at least one character'];
+	if (isNaN(Number(reqQuiz.quizDuration)))
+		return [false, 'Please provide a valid number for quiz duration'];
 }
 export function AreEveryThingsComingInSaveQuizReqBody(reqQuiz: any): boolean {
 	if (!reqQuiz.name) return false;
