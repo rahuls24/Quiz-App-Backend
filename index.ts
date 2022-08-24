@@ -10,7 +10,10 @@ import { router as quizRouter } from './src/routes/quiz';
 import examineeStrategy from './src/strategies/passportJWTStrategies/examinee';
 import examinerStrategy from './src/strategies/passportJWTStrategies/examiner';
 import registerUserStrategy from './src/strategies/passportJWTStrategies/registerUser';
-// import swaggerFile from './swagger-output.json';
+import fs from 'fs';
+import { serve, setup } from 'swagger-ui-express';
+import swaggerFile from './swagger.json.js';
+
 const app = express();
 
 // Initializing  middlewares
@@ -33,6 +36,9 @@ app.use('/api/question', questionRouter);
 // Swagger docs related
 // if (process.env.NODE_ENV !== 'production')
 // app.use('/doc', serve, setup(swaggerFile));
+if (fs.existsSync('./swagger-output.json')) {
+	app.use('/doc', serve, setup('./swagger-output.json'));
+}
 // Initializing passport strategies
 examinerStrategy();
 examineeStrategy();

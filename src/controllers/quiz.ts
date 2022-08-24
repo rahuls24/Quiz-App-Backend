@@ -420,7 +420,7 @@ export async function submitQuizHandler(
 			totalTimeTaken,
 			numberSkippedQuestions: numberSkippedQuestions
 		};
-		const updatedQuiz: any = await Quiz.findByIdAndUpdate(quizId, {
+		const updatedQuiz = await Quiz.findByIdAndUpdate(quizId, {
 			$push: { marks: marksPayload }
 		});
 		if (!updatedQuiz)

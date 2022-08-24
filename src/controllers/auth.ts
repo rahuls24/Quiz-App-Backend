@@ -4,14 +4,12 @@ import { sign } from 'jsonwebtoken';
 import { User } from '../models/user';
 import {
 	createAnError,
-	createFailureResponseObj,
 	errorHandlerOfRequestCatchBlock
 } from '../utils/errorHandler';
 import { httpStatusCode, responseHandler } from '../utils/responseHandler';
 import {
-	AreEveryThingsComingInEmailRegisterReqBody,
-	AreEveryThingsComingInEmailSigninReqBody,
-	isValidEmail
+	isValidReqBodyComingFromEmailRegister,
+	isValidReqBodyComingFromEmailLogin
 } from '../utils/validators';
 import { RequestForProtectedRoute } from './../interfaces/common';
 let swagger: any = {};
@@ -25,34 +23,22 @@ export async function createUserWithEmailAndPassword(
 		password: String(req.body.password ?? ''),
 		role: String(req.body.role ?? '')
 	};
-	if (!AreEveryThingsComingInEmailRegisterReqBody(newUser)) {
-		let resObj = createFailureResponseObj('Please send all required data');
-		return responseHandler(res, httpStatusCode.badRequest, resObj);
-	}
-	if (!isValidEmail(newUser.email)) {
-		let resObj = createFailureResponseObj(
-			'Password should be of minimum 6 character'
-		);
-		return responseHandler(res, httpStatusCode.badRequest, resObj);
-	}
-	if (newUser.password.length < 6) {
-		let resObj = createFailureResponseObj(
-			'Password should be of minimum 6 character'
-		);
-		return responseHandler(res, httpStatusCode.badRequest, resObj);
-	}
-	if (newUser.name.length < 3) {
-		let resObj = createFailureResponseObj(
-			'Password should be of minimum 6 character'
-		);
-		return responseHandler(res, httpStatusCode.badRequest, resObj);
-	}
+
 	try {
+		// Checking whether we are getting valid data from request body or not
+		const [
+			isReqBodyContainsValidData,
+			errorMsg
+		] = isValidReqBodyComingFromEmailRegister(newUser);
+		if (!isReqBodyContainsValidData)
+			throw createAnError(errorMsg, httpStatusCode.badRequest);
+
 		const isUserExists = await User.findOne({ email: newUser.email });
-		if (isUserExists) {
-			let resObj = createFailureResponseObj('User Already register');
-			return responseHandler(res, httpStatusCode.badRequest, resObj);
-		}
+		if (isUserExists)
+			throw createAnError(
+				'User is already registered.',
+				httpStatusCode.badRequest
+			);
 		// Generating the hash of password
 		newUser.password = hashSync(
 			newUser.password,
@@ -66,9 +52,47 @@ export async function createUserWithEmailAndPassword(
 			};
 			return responseHandler(res, httpStatusCode.created, resObj);
 		}
-		throw new Error('Something went wrong while registering the user');
+		throw createAnError(
+			'Something went wrong while saving the user into db',
+			httpStatusCode.badRequest
+		);
 	} catch (error) {
 		return errorHandlerOfRequestCatchBlock(res, error);
+
+		//! Swagger docs
+
+		/* #swagger.tags = ['Auth'];
+
+		#swagger.description =
+			'Endpoint to register user with email and password';
+
+		#swagger.parameters['obj'] = {
+			in: 'body',
+			description: 'User information.',
+			required: true,
+			schema: {
+				$name: 'Rahul Kumar',
+				$email: 'examinee@quiz.com',
+				$password: 'qwerty',
+				$user: { $ref: '#/definitions/Role' }
+			}
+		};
+
+		#swagger.responses[200] = {
+			description: 'Bearer Token is successfully generated.',
+			schema: {
+				$status: 'success',
+				$user: { $ref: '#/definitions/User' }
+			}
+		};
+
+		#swagger.responses[400] = {
+			description: 'When there is something wrong with request body.',
+			schema: {
+				$status: 'fail',
+				$error: { $ref: '#/definitions/BadRequestForEmailRegister' }
+			}
+		}; */
 	}
 }
 export async function signinWithEmailAndPassword(
@@ -77,38 +101,21 @@ export async function signinWithEmailAndPassword(
 	next: NextFunction
 ) {
 	const currentUser = {
-		email: req.body.email,
-		password: req.body.password
+		email: String(req.body.email ?? ''),
+		password: String(req.body.password ?? '')
 	};
 	try {
 		// Validation of body data start from here.
-
-		if (!AreEveryThingsComingInEmailSigninReqBody(currentUser))
-			throw createAnError(
-				'Please send all required data',
-				httpStatusCode.badRequest
-			);
-
-		if (!isValidEmail(currentUser.email))
-			throw createAnError(
-				'Please give a valid email',
-				httpStatusCode.badRequest
-			);
-
-		if (
-			currentUser.password instanceof String &&
-			currentUser.password.length < 6
-		)
-			throw createAnError(
-				'Password should be of minimum 6 character',
-				httpStatusCode.badRequest
-			);
-		// Validation of body data is ended here
-
+		const [
+			isReqBodyContainsValidData,
+			errorMsg
+		] = isValidReqBodyComingFromEmailLogin(currentUser);
+		if (!isReqBodyContainsValidData)
+			throw createAnError(errorMsg, httpStatusCode.badRequest);
 		const user = await User.findOne(
 			{ email: currentUser.email },
 			{ __v: 0 }
-		);
+		).lean();
 		if (!user)
 			throw createAnError('User is not found', httpStatusCode.notFound);
 
@@ -175,7 +182,7 @@ export async function signinWithEmailAndPassword(
                 description: 'When there is something wrong with request body.',
                 schema: {
                     $status: 'fail',
-                    $error: { $ref: '#/definitions/BadRequestForUserLogin' },
+                    $error: { $ref: '#/definitions/BadRequestForEmailLogin' },
                 },
             };
         */
