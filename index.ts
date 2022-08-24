@@ -12,7 +12,7 @@ import examinerStrategy from './src/strategies/passportJWTStrategies/examiner';
 import registerUserStrategy from './src/strategies/passportJWTStrategies/registerUser';
 import fs from 'fs';
 import { serve, setup } from 'swagger-ui-express';
-import swaggerFile from './swagger.json.js';
+import swaggerFile from './swagger-output.json';
 
 const app = express();
 
@@ -37,7 +37,7 @@ app.use('/api/question', questionRouter);
 // if (process.env.NODE_ENV !== 'production')
 // app.use('/doc', serve, setup(swaggerFile));
 if (fs.existsSync('./swagger-output.json')) {
-	app.use('/doc', serve, setup('./swagger-output.json'));
+	app.use('/doc', serve, setup(swaggerFile));
 }
 // Initializing passport strategies
 examinerStrategy();

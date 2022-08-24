@@ -1,0 +1,505 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Quiz App",
+    "description": "Documentation of quiz app endpoints"
+  },
+  "host": "localhost:8000",
+  "basePath": "/",
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Collection of user based endpoints"
+    }
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "securityDefinitions": {
+    "apiKeyAuth": {
+      "type": "apiKey",
+      "in": "header",
+      "name": "authorization",
+      "description": "any description..."
+    }
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/auth/register-user-with-email": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "description": "Endpoint to register user with email and password",
+        "parameters": [
+          {
+            "name": "obj",
+            "in": "body",
+            "description": "User information.",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "example": "Rahul Kumar"
+                },
+                "email": {
+                  "type": "string",
+                  "example": "examinee@quiz.com"
+                },
+                "password": {
+                  "type": "string",
+                  "example": "qwerty"
+                },
+                "user": {
+                  "$ref": "#/definitions/Role"
+                }
+              },
+              "required": [
+                "name",
+                "email",
+                "password",
+                "user"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bearer Token is successfully generated.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "user": {
+                  "$ref": "#/definitions/User"
+                }
+              },
+              "required": [
+                "status",
+                "user"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "When there is something wrong with request body.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "$ref": "#/definitions/BadRequestForEmailRegister"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/signin-user-with-email": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "description": "Endpoint to get login (JWT Based login) token(Bearer Token). ",
+        "parameters": [
+          {
+            "name": "obj",
+            "in": "body",
+            "description": "User information.",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "example": "examinee@quiz.com"
+                },
+                "password": {
+                  "type": "string",
+                  "example": "qwerty"
+                }
+              },
+              "required": [
+                "email",
+                "password"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bearer Token is successfully generated.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "token": {
+                  "type": "string",
+                  "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+                }
+              },
+              "required": [
+                "status",
+                "token"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "When there is something wrong with request body.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "$ref": "#/definitions/BadRequestForEmailLogin"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/get-user-details": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "description": "Endpoint to get current login user details",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "User successfully obtained.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "user": {
+                  "$ref": "#/definitions/User"
+                }
+              },
+              "required": [
+                "status",
+                "user"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "When user is not present in db.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "No user found in DB."
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apiKeyAuth": []
+          }
+        ]
+      }
+    },
+    "/api/quiz/save-a-quiz": {
+      "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "example": "any"
+                },
+                "topics": {
+                  "example": "any"
+                },
+                "totalTime": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/quiz/get-quizzes-of-examiners": {
+      "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "examiners": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/quiz/get-all-enrolled-quizzes": {
+      "get": {
+        "description": "",
+        "parameters": [],
+        "responses": {}
+      }
+    },
+    "/api/quiz/get-all-unenrolled-quizzes": {
+      "get": {
+        "description": "",
+        "parameters": [],
+        "responses": {}
+      }
+    },
+    "/api/quiz/enroll-for-a-quiz": {
+      "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "quizId": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/quiz/save-start-time": {
+      "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "quizId": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/quiz/get-quiz-start-time/{quizId}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "quizId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/quiz/submit-quiz": {
+      "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "quizId": {
+                  "example": "any"
+                },
+                "submittedQuestions": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/quiz/get-quizzes-history": {
+      "get": {
+        "description": "",
+        "parameters": [],
+        "responses": {}
+      }
+    },
+    "/api/question/save-questions": {
+      "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "questionsData": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {}
+      }
+    },
+    "/api/question/get-all-questions/{quizId}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "quizId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {}
+      }
+    }
+  },
+  "definitions": {
+    "Role": {
+      "type": "string",
+      "enum": [
+        "examinee",
+        "examiner"
+      ]
+    },
+    "User": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "Rahul Kumar"
+        },
+        "email": {
+          "type": "string",
+          "example": "rahuls24@quiz.com"
+        },
+        "role": {
+          "$ref": "#/definitions/Role"
+        },
+        "isVerified": {
+          "type": "boolean",
+          "example": false
+        }
+      }
+    },
+    "BadRequestForEmailLogin": {
+      "type": "string",
+      "enum": [
+        "Please provide value for all the parameter",
+        "Please provide a valid email",
+        "Password should be of minimum 6 characters",
+        "Password is not correct"
+      ]
+    },
+    "BadRequestForEmailRegister": {
+      "type": "string",
+      "enum": [
+        "Please provide value for all the parameter",
+        "Please provide a valid email",
+        "Password should be of minimum 6 characters",
+        "Name should be of minimum 3 characters",
+        "Role will be either examinee or examiner"
+      ]
+    }
+  }
+}
