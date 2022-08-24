@@ -1,7 +1,8 @@
 import differenceInMinutes from 'date-fns/differenceInMinutes';
+import { Schema } from 'mongoose';
 import { AreBothArraysEqual } from './validators';
 type questionsListType = {
-    _id: string;
+    _id: Schema.Types.ObjectId;
     answers: Array<string>;
 };
 type normalizeQuestionType = {
@@ -21,7 +22,7 @@ export function normalizeQuestionData(questionsList: Array<questionsListType>) {
         [k: string]: Array<string>;
     } = {};
     questionsList.forEach((question) => {
-        normalizeQuestions[question._id] = question.answers;
+        normalizeQuestions[question._id.toString()] = question.answers;
     });
     return normalizeQuestions;
 }

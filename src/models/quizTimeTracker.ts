@@ -1,6 +1,6 @@
 import { model, Schema } from 'mongoose';
-
-const quizTimeTrackerSchema = new Schema({
+import { IQuizTimeTracker } from '../interfaces/quizInterfaces';
+const quizTimeTrackerSchema = new Schema<IQuizTimeTracker>({
 	quizId: {
 		type: Schema.Types.ObjectId,
 		ref: 'Quiz',

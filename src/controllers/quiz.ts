@@ -1,4 +1,5 @@
 import { NextFunction, Response } from 'express';
+import { Schema } from 'mongoose';
 import { RequestForProtectedRoute } from '../interfaces/common';
 import { Question } from '../models/question';
 import { createAnError, createFailureResponseObj } from '../utils/errorHandler';
@@ -149,7 +150,7 @@ export async function enrollAExamineeInAQuiz(
     next: NextFunction
 ) {
     const user = req.user;
-    const userId: any = user._id;
+    const userId = user._id;
     let quizId = req.body.quizId;
     if (!isValidMongoObjectId(quizId)) {
         let resObj = createFailureResponseObj('Please send a valid quiz id');
@@ -157,9 +158,9 @@ export async function enrollAExamineeInAQuiz(
     }
     try {
         // TODO: Add logic to handle paid quizzes.
-        const updatedQuiz: any = await Quiz.updateOne(
+        const updatedQuiz = await Quiz.updateOne(
             { _id: quizId },
-            { $addToSet: { enrolledBy: userId } }
+            { $addToSet: { enrolledBy: new Schema.Types.ObjectId(userId) } }
         );
 
         if (updatedQuiz.modifiedCount === 0) {
@@ -361,7 +362,7 @@ export async function submitQuizHandler(
                 'Something wrong with submittedQuestions obj',
                 400
             );
-        let getQuestionList: any = Question.find(
+        let getQuestionList = Question.find(
             {
                 quizzes: { $in: [quizId] },
             },
@@ -369,14 +370,14 @@ export async function submitQuizHandler(
                 _id: 1,
                 answers: 1,
             }
-        );
-        let getQuizTimeDetails: any = QuizTimeTracker.findOne({
+        ).lean();
+        let getQuizTimeDetails = QuizTimeTracker.findOne({
             quizId: quizId,
             startedBy: user._id,
-        });
+        }).lean();
 
-        let questionsList: any = await getQuestionList;
-        let quizTimeDetails: any = await getQuizTimeDetails;
+        let questionsList = await getQuestionList;
+        let quizTimeDetails = await getQuizTimeDetails;
         if (questionsList?.length === 0)
             throw createAnError(
                 'Something went wrong while fetching questions from DB'
@@ -386,7 +387,7 @@ export async function submitQuizHandler(
                 'Something went wrong while getting quiz start time'
             );
         let totalTimeTaken = differenceFromNowInMinutes(
-            quizTimeDetails?.startedAt
+            quizTimeDetails.startedAt
         );
         const normalizeQuestionsDataFromDB =
             normalizeQuestionData(questionsList);

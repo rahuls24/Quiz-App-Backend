@@ -1,4 +1,5 @@
 import { NextFunction, Response } from 'express';
+import { Schema } from 'mongoose';
 import { createAnError } from '../utils/errorHandler';
 import { isUserAlreadyGivenQuiz } from '../utils/quizFunctions';
 import { isValidMongoObjectId, isValidQuestionData } from '../utils/validators';
@@ -49,12 +50,13 @@ export async function getAllQuestionsOfAQuiz(
     try {
         if (!isValidMongoObjectId(quizId))
             throw createAnError('Please give a valid quiz id', 400);
-        let quizData:any= await Quiz.findById(quizId, {
+        let quizData = await Quiz.findById(quizId, {
             _id: 0,
             enrolledBy: 1,
             createdBy: 1,
             marks: 1,
-        });
+        }).lean();
+        console.log(quizData);
         if (!quizData)
             throw createAnError(
                 'Quiz is not found in db',
@@ -67,10 +69,14 @@ export async function getAllQuestionsOfAQuiz(
             );
         // Hiding questions if user is not enrolled to current quiz
         if (user.role === 'examinee') {
-            if (!quizData.enrolledBy.includes(user._id))
+            if (
+                !quizData.enrolledBy.includes(
+                    new Schema.Types.ObjectId(user._id)
+                )
+            )
                 shouldOnlyGiveTotalNoOfQuestion = true;
         }
-        let questionsList:any = await Question.find(
+        let questionsList = await Question.find(
             {
                 quizzes: { $in: [quizId] },
             },
@@ -82,7 +88,7 @@ export async function getAllQuestionsOfAQuiz(
                 answers: 1,
                 images: 1,
             }
-        );
+        ).lean();
 
         if (!questionsList)
             throw createAnError(
@@ -90,8 +96,8 @@ export async function getAllQuestionsOfAQuiz(
             );
         // Hiding the answer if user is not owner of the quiz
         if (quizData?.createdBy?.toString() !== user._id?.toString()) {
-            questionsList = questionsList?.map((question:any) => {
-                return { ...question?._doc, answers: [] };
+            questionsList = questionsList?.map((question) => {
+                return { ...question, answers: [] };
             });
         }
         if (shouldOnlyGiveTotalNoOfQuestion)
