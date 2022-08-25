@@ -87,7 +87,7 @@
           }
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": "User is created successfully.",
             "schema": {
               "type": "object",
@@ -95,14 +95,10 @@
                 "status": {
                   "type": "string",
                   "example": "success"
-                },
-                "user": {
-                  "$ref": "#/definitions/User"
                 }
               },
               "required": [
-                "status",
-                "user"
+                "status"
               ],
               "xml": {
                 "name": "main"
@@ -564,9 +560,78 @@
     },
     "/api/quiz/get-all-unenrolled-quizzes": {
       "get": {
-        "description": "",
+        "tags": [
+          "Quiz"
+        ],
+        "description": "Endpoint to get all unenrolled quizzes",
         "parameters": [],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "When quizzes are retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "quizzes": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Quiz"
+                  }
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "409": {
+            "description": "When role is matched with defined roles",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "When there is something with server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong while retrieving quizzes"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
       }
     },
     "/api/quiz/enroll-for-a-quiz": {
@@ -665,66 +730,525 @@
     },
     "/api/quiz/save-start-time": {
       "post": {
-        "description": "",
+        "tags": [
+          "Quiz"
+        ],
+        "description": "Endpoint to save quiz start time for a quiz",
         "parameters": [
           {
-            "name": "body",
+            "name": "obj",
             "in": "body",
+            "description": "Quiz id of quiz for which you want to save start time",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
                 "quizId": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "629ca3d78b22bd7a8ad4e47e"
                 }
-              }
+              },
+              "required": [
+                "quizId"
+              ]
             }
           }
         ],
-        "responses": {}
+        "responses": {
+          "201": {
+            "description": "When start time is saved successfully.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "When req body contains invalid quiz id.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Please send a valid quiz id"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "When quiz is not found.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Quiz is not present in DB"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "409": {
+            "description": "When start time is already present.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Time is already present"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "When there is something with server.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong while saving time in db."
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
       }
     },
     "/api/quiz/get-quiz-start-time/{quizId}": {
       "get": {
-        "description": "",
+        "tags": [
+          "Quiz"
+        ],
+        "description": "Endpoint to get start time of a quiz",
         "parameters": [
           {
             "name": "quizId",
             "in": "path",
             "required": true,
             "type": "string"
+          },
+          {
+            "name": "quizId",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "description": "Quiz ID for which you want to retrieve its start time"
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "When start time is retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "startTime": {
+                  "type": "string",
+                  "example": "2022-06-05T12:45:38.998Z"
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "When req body contains invalid quiz id.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Please send a valid quiz id"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "404": {
+            "description": "When quiz is not found.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Quiz is not present in DB"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "409": {
+            "description": "When more than one start time is present",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "There is more than one time for this Quiz"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "When there is something with server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong while retrieving start time of the quiz from db"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
       }
     },
     "/api/quiz/submit-quiz": {
       "post": {
-        "description": "",
+        "tags": [
+          "Quiz"
+        ],
+        "description": "Endpoint to submit the quiz",
         "parameters": [
           {
-            "name": "body",
+            "name": "obj",
             "in": "body",
+            "description": "Quiz answers details",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
                 "quizId": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "629ca58c0cf3c0efda1644b5"
                 },
                 "submittedQuestions": {
-                  "example": "any"
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "_id": {
+                        "type": "string",
+                        "example": "629ca58c0cf3c0efda1644b5"
+                      },
+                      "answers": {
+                        "type": "array",
+                        "example": [
+                          "0"
+                        ],
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
                 }
-              }
+              },
+              "required": [
+                "quizId",
+                "submittedQuestions"
+              ]
             }
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "When quiz is submitted successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "result": {
+                  "type": "object",
+                  "properties": {
+                    "marks": {
+                      "type": "number",
+                      "example": 2
+                    },
+                    "numberOfRightAnswers": {
+                      "type": "number",
+                      "example": 2
+                    },
+                    "numberOfWrongAnswers": {
+                      "type": "number",
+                      "example": 3
+                    },
+                    "numberSkippedQuestions": {
+                      "type": "number",
+                      "example": 1
+                    },
+                    "totalTimeTaken": {
+                      "type": "number",
+                      "example": 10
+                    }
+                  }
+                }
+              },
+              "required": [
+                "status",
+                "result"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "When there is something wrong with request body.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Please give a valid quiz id || Something wrong with submittedQuestions obj"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "When there is something with server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong while fetching questions from DB || Something went wrong while getting quiz start time || Something went wrong while saving the marks into db. Please try again"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
       }
     },
     "/api/quiz/get-quizzes-history": {
       "get": {
-        "description": "",
+        "tags": [
+          "Quiz"
+        ],
+        "description": "Endpoint to get quizzes history of current examinee.",
         "parameters": [],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "When quizzes history of current examinee is retrieved.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "quizzesDetails": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "quizId": {
+                        "type": "string",
+                        "example": "629ca58c0cf3c0efda1644b5"
+                      },
+                      "quizName": {
+                        "type": "string",
+                        "example": "Quiz Name"
+                      },
+                      "quizDuration": {
+                        "type": "number",
+                        "example": 30
+                      },
+                      "quizResult": {
+                        "type": "object",
+                        "properties": {
+                          "marks": {
+                            "type": "number",
+                            "example": 3
+                          },
+                          "examineeId": {
+                            "type": "string",
+                            "example": "629ca42f8b22bd7a8ad4e496"
+                          },
+                          "numberOfRightAnswers": {
+                            "type": "number",
+                            "example": 3
+                          },
+                          "numberOfWrongAnswers": {
+                            "type": "number",
+                            "example": 2
+                          },
+                          "totalTimeTaken": {
+                            "type": "number",
+                            "example": 3
+                          },
+                          "numberSkippedQuestions": {
+                            "type": "number",
+                            "example": 2
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "required": [
+                "status",
+                "quizzesDetails"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "When there is something with server.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong while retrieving quizzes"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
       }
     },
     "/api/question/save-questions": {

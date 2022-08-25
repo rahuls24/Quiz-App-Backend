@@ -42,17 +42,14 @@ export async function createUserWithEmailAndPassword(
 			genSaltSync(Number(process.env.bcryptSaltRounds))
 		);
 		const registerUser = await new User(newUser).save();
-		if (registerUser) {
-			let resObj = {
-				status: 'success',
-				user: registerUser
-			};
-			return responseHandler(res, httpStatusCode.created, resObj);
-		}
+		if (!registerUser)
 		throw createAnError(
 			'Something went wrong while saving the user into db',
 			httpStatusCode.internalServerError
 		);
+		res.status(httpStatusCode.created).json({
+			status:'success'
+		})
 	} catch (error) {
 		return errorHandlerOfRequestCatchBlock(res, error);
 
@@ -75,11 +72,10 @@ export async function createUserWithEmailAndPassword(
 			}
 		};
 
-		#swagger.responses[200] = {
+		#swagger.responses[201] = {
 			description: 'User is created successfully.',
 			schema: {
 				$status: 'success',
-				$user: { $ref: '#/definitions/User' }
 			}
 		};
 

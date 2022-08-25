@@ -202,9 +202,7 @@ export async function getAllQuizzesForExaminers(
 		}).lean();
 
 		if (!quizzes)
-			throw createAnError(
-				'Something went wrong while getting quizzes'
-			);
+			throw createAnError('Something went wrong while getting quizzes');
 		let resObj = {
 			status: 'success',
 			quizzes: quizzes
@@ -215,7 +213,7 @@ export async function getAllQuizzesForExaminers(
 		//--------------Implementation part is done ---------------------
 
 		//! Swagger docs
-        /*
+		/*
 		#swagger.tags = ['Quiz'];
 		#swagger.description = 'Endpoint to get all quizzes of list of examiner';
 		#swagger.parameters['obj'] = {
@@ -254,26 +252,34 @@ export async function enrollAExamineeInAQuiz(
 ) {
 	const user = req.user;
 	const userId = user._id;
-	let quizId = String(req.body.quizId??'');
-	
+	let quizId = String(req.body.quizId ?? '');
+
 	try {
-		if (!isValidMongoObjectId(quizId)) throw createAnError('Please send a valid quiz id',httpStatusCode.badRequest)
+		if (!isValidMongoObjectId(quizId))
+			throw createAnError(
+				'Please send a valid quiz id',
+				httpStatusCode.badRequest
+			);
 		// TODO: Add logic to handle paid quizzes.
 		const updatedQuiz = await Quiz.updateOne(
 			{ _id: quizId },
 			{ $addToSet: { enrolledBy: new Schema.Types.ObjectId(userId) } }
 		);
 
-		if (updatedQuiz.modifiedCount === 0)throw createAnError('User is already enrolled in this quiz or quiz may not found',httpStatusCode.forbidden) 
+		if (updatedQuiz.modifiedCount === 0)
+			throw createAnError(
+				'User is already enrolled in this quiz or quiz may not found',
+				httpStatusCode.forbidden
+			);
 		res.status(httpStatusCode.noContent).json({
 			status: 'success'
-		})
+		});
 	} catch (error) {
 		next(error);
 		//--------------Implementation part is done ---------------------
 
 		//! Swagger docs
-        /*
+		/*
 		#swagger.tags = ['Quiz'];
 		#swagger.description = 'Endpoint to enroll in a quiz';
 		#swagger.parameters['obj'] = {
@@ -315,43 +321,74 @@ export async function getAllUnEnrolledQuizForCurrentUser(
 	next: NextFunction
 ) {
 	const user = req.user;
-	if (user.role.toLowerCase() === 'examiner') {
-		try {
-			const examinerQuiz = await Quiz.find({
-				createdBy: { $ne: user._id }
-			});
-			if (!examinerQuiz)
+	try {
+		if (user.role.toLowerCase() === 'examiner') {
+			const examinerQuizzes = await Quiz.find(
+				{
+					createdBy: { $ne: user._id }
+				},
+				{ enrolledBy: 0, __v: 0 }
+			).lean();
+			if (!examinerQuizzes)
 				throw createAnError(
 					'Something went wrong while fetching quiz for examiner'
 				);
-			let resObj = {
+			return res.status(httpStatusCode.ok).json({
 				status: 'success',
-				quizzes: examinerQuiz
-			};
-			return responseHandler(res, httpStatusCode.ok, resObj);
-		} catch (error) {
-			next(error);
-		}
-	} else if (user.role.toLowerCase() === 'examinee') {
-		try {
-			const quizzes = await Quiz.find({
-				enrolledBy: { $nin: [user._id] }
+				quizzes: examinerQuizzes
 			});
-			if (!quizzes)
+		} else if (user.role.toLowerCase() === 'examinee') {
+			const examineeQuizzes = await Quiz.find(
+				{
+					enrolledBy: { $nin: [user._id] }
+				},
+				{ enrolledBy: 0, __v: 0 }
+			).lean();
+			if (!examineeQuizzes)
 				throw createAnError(
-					'Something went wrong while getting quiz for the examinee'
+					'Something went wrong while retrieving quizzes for the examinee'
 				);
-			let resObj = {
+			return res.status(httpStatusCode.ok).json({
 				status: 'success',
-				quizzes: quizzes
-			};
-			return responseHandler(res, httpStatusCode.ok, resObj);
-		} catch (error) {
-			next(error);
+				quizzes: examineeQuizzes
+			});
+		} else {
+			throw createAnError(
+				'Something wrong in user role',
+				httpStatusCode.conflict
+			);
 		}
-	} else {
-		let resObj = createFailureResponseObj('Something wrong in user role');
-		return responseHandler(res, httpStatusCode.conflict, resObj);
+	} catch (error) {
+		next(error);
+		//--------------Implementation part is done ---------------------
+
+		//! Swagger docs
+		/*
+		#swagger.tags = ['Quiz'];
+		#swagger.description = 'Endpoint to get all unenrolled quizzes';
+		#swagger.responses[200] = {
+			description: 'When quizzes are retrieved successfully',
+			schema: {
+				$status: 'success',
+				quizzes: [{
+					$ref: '#/definitions/Quiz'
+				}]
+			}
+		};
+		#swagger.responses[409] = {
+			description: 'When role is matched with defined roles',
+			schema: {
+				$status: 'fail',
+			}
+		};
+		#swagger.responses[500] = {
+			description: 'When there is something with server',
+			schema: {
+				$status: 'fail',
+				$error: 'Something went wrong while retrieving quizzes'
+			}
+		};
+		*/
 	}
 }
 
@@ -362,35 +399,95 @@ export async function saveQuizStartTime(
 ) {
 	const user = req.user;
 	const payload = {
-		quizId: req.body.quizId,
+		quizId: String(req.body.quizId ?? ''),
 		startedBy: user._id
 	};
 	try {
 		if (!isValidMongoObjectId(payload.quizId))
-			throw createAnError('Please send a valid quiz id', 400);
-		const getQuizDetails = Quiz.findById(payload.quizId);
+			throw createAnError(
+				'Please send a valid quiz id',
+				httpStatusCode.badRequest
+			);
+
+		const getQuizDetails = Quiz.findById(payload.quizId).lean();
 		const getTimeForCurrentQuiz = QuizTimeTracker.findOne({
 			quizId: req.body.quizId,
 			startedBy: user._id
 		});
+
 		const isQuizPresent = await getQuizDetails;
 		const isTimeForCurrentQuizIsPresent = await getTimeForCurrentQuiz;
-		console.log(isTimeForCurrentQuizIsPresent);
+
 		if (!isQuizPresent)
-			throw createAnError('Quiz is not present in DB', 404);
+			throw createAnError(
+				'Quiz is not present in DB',
+				httpStatusCode.notFound
+			);
 		if (isTimeForCurrentQuizIsPresent)
 			throw createAnError(
 				'Time is already present',
 				httpStatusCode.conflict
 			);
+
 		const isSaved = await new QuizTimeTracker(payload).save();
 		if (!isSaved)
 			throw createAnError('Something went wrong while saving time in db');
-		return res.status(httpStatusCode.noContent).json({
+
+		return res.status(httpStatusCode.created).json({
 			status: 'success'
 		});
 	} catch (error) {
 		next(error);
+		//--------------Implementation part is done ---------------------
+
+		//! Swagger docs
+		/*
+		#swagger.tags = ['Quiz'];
+		#swagger.description = 'Endpoint to save quiz start time for a quiz';
+		#swagger.parameters['obj'] = {
+			in: 'body',
+			description: 'Quiz id of quiz for which you want to save start time',
+			required: true,
+			schema: {
+				$quizId: '629ca3d78b22bd7a8ad4e47e'
+			}
+		};
+
+		#swagger.responses[201] = {
+			description: 'When start time is saved successfully.',
+			schema: {
+				$status: 'success',
+			}
+		};
+		#swagger.responses[400] = {
+			description: 'When req body contains invalid quiz id.',
+			schema: {
+				$status: 'fail',
+				$error: 'Please send a valid quiz id'
+			}
+		};
+		#swagger.responses[404] = {
+			description: 'When quiz is not found.',
+			schema: {
+				$status: 'fail',
+				$error: 'Quiz is not present in DB'
+			}
+		};
+		#swagger.responses[409] = {
+			description: 'When start time is already present.',
+			schema: {
+				$status: 'fail',
+				$error: 'Time is already present'
+			}
+		};
+		#swagger.responses[500] = {
+			description: 'When there is something with server.',
+			schema: {
+				$status: 'fail',
+				$error: 'Something went wrong while saving time in db.'
+			}
+		};
+		*/
 	}
 }
 
@@ -399,27 +496,93 @@ export async function getQuizStartTime(
 	res: Response,
 	next: NextFunction
 ) {
-	const quizId = req.params.quizId;
+	const quizId = String(req.params.quizId ?? '');
 	const user = req.user;
 	try {
 		if (!isValidMongoObjectId(quizId))
-			throw createAnError('Please send a valid quiz id', 400);
-		const startTime = await QuizTimeTracker.find({
-			$and: [{ quizId: quizId, startedBy: user._id }]
-		});
+			throw createAnError(
+				'Please send a valid quiz id',
+				httpStatusCode.badRequest
+			);
+
+		const startTime = await QuizTimeTracker.find(
+			{
+				$and: [{ quizId: quizId, startedBy: user._id }]
+			},
+			{ _id: 0, startedAt: 1 }
+		).lean();
+
+		if (!startTime)
+			throw createAnError(
+				'Something went wrong while retrieving start time of the quiz from db'
+			);
 		if (startTime.length === 0)
-			throw createAnError('Start time is not present in db', 404);
+			throw createAnError(
+				'Start time is not present in db',
+				httpStatusCode.notFound
+			);
 		if (startTime.length > 1)
 			throw createAnError(
 				'There is more than one time for this Quiz',
-				404
+				httpStatusCode.conflict
 			);
+
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			startTime: startTime[0]
+			startTime: startTime[0].startedAt
 		});
 	} catch (error) {
 		next(error);
+		//--------------Implementation part is done ---------------------
+
+		//! Swagger docs
+		/*
+		#swagger.tags = ['Quiz'];
+		#swagger.description = 'Endpoint to get start time of a quiz';
+		#swagger.parameters['quizId'] = {
+				in: 'query',
+				description:
+					'Quiz ID for which you want to retrieve its start time',
+				required: true,
+				type: 'string'
+			};
+
+		#swagger.responses[200] = {
+			description: 'When start time is retrieved successfully',
+			schema: {
+				$status: 'success',
+				startTime:'2022-06-05T12:45:38.998Z'
+			}
+		};
+		#swagger.responses[400] = {
+			description: 'When req body contains invalid quiz id.',
+			schema: {
+				$status: 'fail',
+				$error: 'Please send a valid quiz id'
+			}
+		};
+		#swagger.responses[404] = {
+			description: 'When quiz is not found.',
+			schema: {
+				$status: 'fail',
+				$error: 'Quiz is not present in DB'
+			}
+		};
+		#swagger.responses[409] = {
+			description: 'When more than one start time is present',
+			schema: {
+				$status: 'fail',
+				$error: 'There is more than one time for this Quiz'
+			}
+		};
+		#swagger.responses[500] = {
+			description: 'When there is something with server',
+			schema: {
+				$status: 'fail',
+				$error: 'Something went wrong while retrieving start time of the quiz from db'
+			}
+		};
+		*/
 	}
 }
 
@@ -428,7 +591,6 @@ export async function getQuizzesHistory(
 	res: Response,
 	next: NextFunction
 ) {
-	// throw new Error('Rahul is throwing some error');
 	const currentUser = req.user;
 	try {
 		const rawQuizzesDetails = await Quiz.find(
@@ -439,7 +601,11 @@ export async function getQuizzesHistory(
 				]
 			},
 			{ _id: 1, marks: 1, name: 1, quizDuration: 1 }
-		);
+		).lean();
+		if (!rawQuizzesDetails)
+			throw createAnError(
+				'Something went wrong while retrieving quizzes'
+			);
 		const quizzesDetails = rawQuizzesDetails.map((quiz) => {
 			return {
 				quizId: quiz._id,
@@ -458,6 +624,44 @@ export async function getQuizzesHistory(
 		});
 	} catch (error) {
 		next(error);
+		//--------------Implementation part is done ---------------------
+
+		//! Swagger docs
+		/*
+		#swagger.tags = ['Quiz'];
+
+		#swagger.description =
+			'Endpoint to get quizzes history of current examinee.';
+
+		#swagger.responses[200] = {
+			description: 'When quizzes history of current examinee is retrieved.',
+			schema: {
+				$status: 'success',
+				$quizzesDetails: [
+					{
+						quizId: '629ca58c0cf3c0efda1644b5',
+						quizName: 'Quiz Name',
+						quizDuration: 30,
+						quizResult: {
+							marks: 3,
+							examineeId: '629ca42f8b22bd7a8ad4e496',
+							numberOfRightAnswers: 3,
+							numberOfWrongAnswers: 2,
+							totalTimeTaken: 3,
+							numberSkippedQuestions: 2
+						}
+					}
+				]
+			}
+		};
+		#swagger.responses[500] = {
+			description: 'When there is something with server.',
+			schema: {
+				$status: 'fail',
+				$error: 'Something went wrong while retrieving quizzes'
+			}
+		};
+		*/
 	}
 }
 
@@ -466,16 +670,19 @@ export async function submitQuizHandler(
 	res: Response,
 	next: NextFunction
 ) {
-	const quizId = req.body.quizId ?? '';
+	const quizId = String(req.body.quizId ?? '');
 	const submittedQuestions = req.body.submittedQuestions;
 	const user = req.user;
 	try {
 		if (!isValidMongoObjectId(quizId))
-			throw createAnError('Please give a valid quiz id', 400);
+			throw createAnError(
+				'Please give a valid quiz id',
+				httpStatusCode.badRequest
+			);
 		if (!isValidSubmittedQuestions(submittedQuestions))
 			throw createAnError(
 				'Something wrong with submittedQuestions obj',
-				400
+				httpStatusCode.badRequest
 			);
 		let getQuestionList = Question.find(
 			{
@@ -493,6 +700,7 @@ export async function submitQuizHandler(
 
 		let questionsList = await getQuestionList;
 		let quizTimeDetails = await getQuizTimeDetails;
+
 		if (questionsList?.length === 0)
 			throw createAnError(
 				'Something went wrong while fetching questions from DB'
@@ -554,6 +762,58 @@ export async function submitQuizHandler(
 		});
 	} catch (error) {
 		next(error);
+		//--------------Implementation part is done ---------------------
+
+		//! Swagger docs
+		/*
+		#swagger.tags = ['Quiz'];
+
+		#swagger.description = 'Endpoint to submit the quiz';
+
+		#swagger.parameters['obj'] = {
+			in: 'body',
+			description: 'Quiz answers details',
+			required: true,
+			schema: {
+				$quizId: '629ca58c0cf3c0efda1644b5',
+				$submittedQuestions: [
+					{
+						_id: '629ca58c0cf3c0efda1644b5',
+						answers: ['0']
+					}
+				]
+			}
+		};
+
+		#swagger.responses[200] = {
+			description: 'When quiz is submitted successfully',
+			schema: {
+				$status: 'success',
+				$result: {
+					marks: 2,
+					numberOfRightAnswers: 2,
+					numberOfWrongAnswers: 3,
+					numberSkippedQuestions: 1,
+					totalTimeTaken: 10
+				}
+			}
+		};
+
+		#swagger.responses[400] = {
+			description: 'When there is something wrong with request body.',
+			schema: {
+				$status: 'fail',
+				$error: 'Please give a valid quiz id  || Something wrong with submittedQuestions obj'
+			}
+		};
+		#swagger.responses[500] = {
+			description: 'When there is something with server',
+			schema: {
+				$status: 'fail',
+				$error: 'Something went wrong while fetching questions from DB || Something went wrong while getting quiz start time || Something went wrong while saving the marks into db. Please try again'
+			}
+		};
+		*/
 	}
 }
 
