@@ -49,12 +49,13 @@ type ReqUserFromEmailLogin = {
 export function isValidReqBodyComingFromEmailLogin(
 	reqUser: ReqUserFromEmailLogin
 ): [boolean, string] {
-	if (Object.keys(reqUser).some(isEmptyString))
+	if (Object.values(reqUser).some(isEmptyString))
 		return [false, 'Please provide value for all the parameter'];
 	if (!isValidEmail(reqUser.email))
 		return [false, 'Please provide a valid email'];
 	if (reqUser.password.length < 6)
 		return [false, 'Password should be of minimum 6 characters'];
+	return [true, ''];
 }
 type ReqQuizFromSaveQuiz = {
 	name: string;
@@ -70,6 +71,7 @@ export function isValidReqBodyComingFromSaveQuiz(
 	if (reqQuiz.name.length < 0) return [false, 'Please provide quiz name'];
 	if (isNaN(Number(reqQuiz.quizDuration)))
 		return [false, 'Please provide a valid number for quiz duration'];
+	return [true, ''];
 }
 export function isValidReqBodyComingFromGetAllQuizzesForExaminers(
 	reqExaminers: any
