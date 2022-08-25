@@ -44,6 +44,7 @@ export async function saveQuiz(
 			throw createAnError('Something went wrong while saving the quiz');
 		return res.status(201).json({
 			status: 'success',
+			quiz,
 		});
 	} catch (error) {
 		next(error);
