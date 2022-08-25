@@ -71,10 +71,18 @@ export function isValidReqBodyComingFromSaveQuiz(
 	if (isNaN(Number(reqQuiz.quizDuration)))
 		return [false, 'Please provide a valid number for quiz duration'];
 }
-export function AreEveryThingsComingInSaveQuizReqBody(reqQuiz: any): boolean {
-	if (!reqQuiz.name) return false;
-	if (!reqQuiz.quizDuration) return false;
-	return true;
+export function isValidReqBodyComingFromGetAllQuizzesForExaminers(
+	reqExaminers: any
+): [boolean, string] {
+	if (!reqExaminers) return [false, 'Please send examiner data'];
+	if (!Array.isArray(reqExaminers))
+		return [false, 'Please send examiner data in array format'];
+	if (
+		Array.isArray(reqExaminers) &&
+		!reqExaminers.every(isValidMongoObjectId)
+	)
+		return [false, 'Please send valid examiner id.'];
+	return [true, ''];
 }
 export function isValidQuestionData(question: any = {}): boolean {
 	if (
@@ -90,11 +98,10 @@ export function isValidQuestionData(question: any = {}): boolean {
 			typeof question.questionType === 'string' &&
 			/* cspell: disable-next-line */
 			(question.questionType.toLowerCase() === 'singleanswer' ||
-			    /* cspell: disable-next-line */
+				/* cspell: disable-next-line */
 				question.questionType.toLowerCase() === 'multipleanswer')
 		)
 	)
-		
 		return false;
 	if (
 		!(

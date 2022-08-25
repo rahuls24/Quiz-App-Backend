@@ -323,55 +323,243 @@
     },
     "/api/quiz/save-a-quiz": {
       "post": {
-        "description": "",
+        "tags": [
+          "Quiz"
+        ],
+        "description": "Endpoint to save a quiz",
         "parameters": [
           {
-            "name": "body",
+            "name": "obj",
             "in": "body",
+            "description": "Quiz information.",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
                 "name": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "A Dummy Quiz Name"
                 },
                 "topics": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "dsa,coding,nodejs,js"
                 },
-                "totalTime": {
-                  "example": "any"
+                "quizDuration": {
+                  "type": "string",
+                  "example": "30"
                 }
-              }
+              },
+              "required": [
+                "name",
+                "topics",
+                "quizDuration"
+              ]
             }
           }
         ],
-        "responses": {}
+        "responses": {
+          "201": {
+            "description": "When quiz is saved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "When there is something wrong with request body.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "$ref": "#/definitions/BadRequestForSaveQuiz"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "When there is something with server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong while saving the quiz"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
       }
     },
     "/api/quiz/get-quizzes-of-examiners": {
       "post": {
-        "description": "",
+        "tags": [
+          "Quiz"
+        ],
+        "description": "Endpoint to get all quizzes of list of examiner",
         "parameters": [
           {
-            "name": "body",
+            "name": "obj",
             "in": "body",
+            "description": "List of examiner ids",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
                 "examiners": {
-                  "example": "any"
+                  "type": "array",
+                  "example": [
+                    "629ca58c0cf3c0efda1644b5",
+                    "629ca3d78b22bd7a8ad4e47e"
+                  ],
+                  "items": {
+                    "type": "string"
+                  }
                 }
-              }
+              },
+              "required": [
+                "examiners"
+              ]
             }
           }
         ],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "When quizzes are retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "quizzes": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/Quiz"
+                  }
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "When there is something with server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong while getting quizzes"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
       }
     },
     "/api/quiz/get-all-enrolled-quizzes": {
       "get": {
-        "description": "",
+        "tags": [
+          "Quiz"
+        ],
+        "description": "Endpoint to get all quiz of the current user",
         "parameters": [],
-        "responses": {}
+        "responses": {
+          "200": {
+            "description": "When quizzes are retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "quizzes": {
+                  "$ref": "#/definitions/Quiz"
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "500": {
+            "description": "When there is something with server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong while getting quiz for the user"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
       }
     },
     "/api/quiz/get-all-unenrolled-quizzes": {
@@ -383,22 +571,96 @@
     },
     "/api/quiz/enroll-for-a-quiz": {
       "post": {
-        "description": "",
+        "tags": [
+          "Quiz"
+        ],
+        "description": "Endpoint to enroll in a quiz",
         "parameters": [
           {
-            "name": "body",
+            "name": "obj",
             "in": "body",
+            "description": "Quiz Id in which examinee want to enroll",
+            "required": true,
             "schema": {
               "type": "object",
               "properties": {
                 "quizId": {
-                  "example": "any"
+                  "type": "string",
+                  "example": "629ca3d78b22bd7a8ad4e47e"
                 }
-              }
+              },
+              "required": [
+                "quizId"
+              ]
             }
           }
         ],
-        "responses": {}
+        "responses": {
+          "204": {
+            "description": "When quizzes are retrieved successfully",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                }
+              },
+              "required": [
+                "status"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "When the quiz id is not a valid id",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Please send a valid quiz id"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "403": {
+            "description": "When user is already enrolled in the quiz",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "User is already enrolled in this quiz or quiz may not found"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
       }
     },
     "/api/quiz/save-start-time": {
@@ -749,6 +1011,49 @@
         }
       }
     },
+    "Quiz": {
+      "type": "object",
+      "properties": {
+        "_id": {
+          "type": "string",
+          "example": "629ca5720cf3c0efda1644b2"
+        },
+        "name": {
+          "type": "string",
+          "example": "Quiz Name"
+        },
+        "topics": {
+          "type": "array",
+          "example": [
+            "Python",
+            "Array"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdBy": {
+          "type": "string",
+          "example": "629ca3d78b22bd7a8ad4e47e"
+        },
+        "isFree": {
+          "type": "boolean",
+          "example": true
+        },
+        "price": {
+          "type": "number",
+          "example": 0
+        },
+        "createOn": {
+          "type": "string",
+          "example": "2022-06-05T12:45:38.998Z"
+        },
+        "imageUrl": {
+          "type": "string",
+          "example": "https://image-url.png"
+        }
+      }
+    },
     "QuestionType": {
       "type": "string",
       "enum": [
@@ -765,7 +1070,7 @@
         },
         "questionText": {
           "type": "string",
-          "example": "Qestion Title"
+          "example": "Question Title"
         },
         "questionType": {
           "type": "string",
@@ -819,6 +1124,13 @@
         "Password should be of minimum 6 characters",
         "Name should be of minimum 3 characters",
         "Role will be either examinee or examiner"
+      ]
+    },
+    "BadRequestForSaveQuiz": {
+      "type": "string",
+      "enum": [
+        "Please provide quiz name",
+        "Please provide a valid number for quiz duration"
       ]
     }
   }

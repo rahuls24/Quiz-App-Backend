@@ -8,14 +8,14 @@ import {
 	calculateNumberOfRightWrongAnswersAndSkippedQuestion,
 	differenceFromNowInMinutes,
 	getCurrentUserMarks,
-	normalizeQuestionData,
+	normalizeQuestionData
 } from '../utils/quizFunctions';
 import { responseHandler } from '../utils/responseHandler';
 import {
-	AreEveryThingsComingInSaveQuizReqBody,
 	isValidMongoObjectId,
-	isValidSubmittedQuestions,
+	isValidReqBodyComingFromGetAllQuizzesForExaminers,
 	isValidReqBodyComingFromSaveQuiz,
+	isValidSubmittedQuestions
 } from '../utils/validators';
 import { Quiz } from './../models/quiz';
 import { QuizTimeTracker } from './../models/quizTimeTracker';
@@ -32,7 +32,7 @@ export async function saveQuiz(
 		topics: String(req.body.topics ?? 'misc').split(','),
 		createdBy: String(user._id ?? ''),
 		enrolledBy: [user._id],
-		quizDuration: String(req.body.totalTime),
+		quizDuration: String(req.body.totalTime)
 	};
 	try {
 		const [isReqBodyContainsValidData, errorMsg] =
@@ -43,7 +43,7 @@ export async function saveQuiz(
 		if (!quiz)
 			throw createAnError('Something went wrong while saving the quiz');
 		return res.status(201).json({
-			status: 'success',
+			status: 'success'
 		});
 	} catch (error) {
 		next(error);
@@ -101,54 +101,18 @@ async function getAllQuizzesForCurrentExaminer(
 	const user = req.user;
 	const currentExaminerId = user?._id;
 	try {
-		const quizzes = await Quiz.find({ createdBy: currentExaminerId });
+		const quizzes = await Quiz.find(
+			{ createdBy: currentExaminerId },
+			{ enrolledBy: 0, __v: 0 }
+		).lean();
 		if (!quizzes)
 			throw createAnError(
 				'Something went wrong while getting quiz for the examiner'
 			);
-		let resObj = {
+		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			quizzes: quizzes,
-		};
-		return responseHandler(res, httpStatusCode.ok, resObj);
-	} catch (error) {
-		next(error);
-	}
-}
-
-export async function getAllQuizzesForExaminers(
-	req: RequestForProtectedRoute,
-	res: Response,
-	next: NextFunction
-) {
-	const examiners = req.body.examiners;
-	if (!examiners) {
-		let resObj = createFailureResponseObj('Please send examiner data');
-		return responseHandler(res, httpStatusCode.badRequest, resObj);
-	}
-	if (!(examiners instanceof Array)) {
-		let resObj = createFailureResponseObj(
-			'Please send examiner data in array format'
-		);
-		return responseHandler(res, httpStatusCode.badRequest, resObj);
-	}
-	if (!examiners.every(isValidMongoObjectId)) {
-		let resObj = createFailureResponseObj(
-			'Please send a valid examiner id'
-		);
-		return responseHandler(res, httpStatusCode.badRequest, resObj);
-	}
-	try {
-		const quizzes = await Quiz.find({ createdBy: { $in: examiners } });
-		if (!quizzes)
-			throw createAnError(
-				'Something went wrong while getting quiz for examiners'
-			);
-		let resObj = {
-			status: 'success',
-			quizzes: quizzes,
-		};
-		return responseHandler(res, httpStatusCode.ok, resObj);
+			quizzes: quizzes
+		});
 	} catch (error) {
 		next(error);
 	}
@@ -165,57 +129,22 @@ async function getAllQuizForCurrentExaminee(
 		const quizzes = await Quiz.find({
 			$and: [
 				{ enrolledBy: { $in: [currentExamineeId] } },
-				{ 'marks.examineeId': { $ne: currentExamineeId } },
-			],
-		});
+				{ 'marks.examineeId': { $ne: currentExamineeId } }
+			]
+		}).lean();
 		if (!quizzes)
 			throw createAnError(
 				'Something went wrong while getting quiz for the examinee'
 			);
 		let resObj = {
 			status: 'success',
-			quizzes: quizzes,
+			quizzes: quizzes
 		};
 		return responseHandler(res, httpStatusCode.ok, resObj);
 	} catch (error) {
 		next(error);
 	}
 }
-
-export async function enrollAExamineeInAQuiz(
-	req: RequestForProtectedRoute,
-	res: Response,
-	next: NextFunction
-) {
-	const user = req.user;
-	const userId = user._id;
-	let quizId = req.body.quizId;
-	if (!isValidMongoObjectId(quizId)) {
-		let resObj = createFailureResponseObj('Please send a valid quiz id');
-		return responseHandler(res, httpStatusCode.badRequest, resObj);
-	}
-	try {
-		// TODO: Add logic to handle paid quizzes.
-		const updatedQuiz = await Quiz.updateOne(
-			{ _id: quizId },
-			{ $addToSet: { enrolledBy: new Schema.Types.ObjectId(userId) } }
-		);
-
-		if (updatedQuiz.modifiedCount === 0) {
-			let resObj = createFailureResponseObj(
-				'User is already enrolled in this quiz or quiz may not found'
-			);
-			return responseHandler(res, httpStatusCode.notAllowed, resObj);
-		}
-		const resObj = {
-			status: 'success',
-		};
-		return responseHandler(res, httpStatusCode.noContent, resObj);
-	} catch (error) {
-		next(error);
-	}
-}
-
 export async function getAllQuizzesForCurrentUser(
 	req: RequestForProtectedRoute,
 	res: Response,
@@ -230,6 +159,154 @@ export async function getAllQuizzesForCurrentUser(
 		let resObj = createFailureResponseObj('Something wrong in user role');
 		return responseHandler(res, httpStatusCode.conflict, resObj);
 	}
+	//--------------Implementation part is done ---------------------
+
+	//! Swagger docs
+	/*
+		#swagger.tags = ['Quiz'];
+		#swagger.description = 'Endpoint to get all quiz of the current user';
+		#swagger.responses[200] = {
+			description: 'When quizzes are retrieved successfully',
+			schema: {
+				$status: 'success',
+				quizzes: {
+					$ref: '#/definitions/Quiz',
+				},
+			},
+		};
+		#swagger.responses[500] = {
+			description: 'When there is something with server',
+			schema: {
+				$status: 'fail',
+				$error: 'Something went wrong while getting quiz for the user',
+			},
+		};
+		
+		*/
+}
+export async function getAllQuizzesForExaminers(
+	req: RequestForProtectedRoute,
+	res: Response,
+	next: NextFunction
+) {
+	const examiners = req.body.examiners;
+
+	try {
+		const [isReqBodyContainsValidData, errorMsg] =
+			isValidReqBodyComingFromGetAllQuizzesForExaminers(examiners);
+		if (!isReqBodyContainsValidData)
+			throw createAnError(errorMsg, httpStatusCode.badRequest);
+
+		const quizzes = await Quiz.find({
+			createdBy: { $in: examiners }
+		}).lean();
+
+		if (!quizzes)
+			throw createAnError(
+				'Something went wrong while getting quizzes'
+			);
+		let resObj = {
+			status: 'success',
+			quizzes: quizzes
+		};
+		return responseHandler(res, httpStatusCode.ok, resObj);
+	} catch (error) {
+		next(error);
+		//--------------Implementation part is done ---------------------
+
+		//! Swagger docs
+        /*
+		#swagger.tags = ['Quiz'];
+		#swagger.description = 'Endpoint to get all quizzes of list of examiner';
+		#swagger.parameters['obj'] = {
+			in: 'body',
+			description: 'List of examiner ids',
+			required: true,
+			schema: {
+				$examiners: ['629ca58c0cf3c0efda1644b5','629ca3d78b22bd7a8ad4e47e']
+			}
+		};
+
+		#swagger.responses[200] = {
+			description: 'When quizzes are retrieved successfully',
+			schema: {
+				$status: 'success',
+				quizzes: [{
+					$ref: '#/definitions/Quiz'
+				}]
+			}
+		};
+		#swagger.responses[500] = {
+			description: 'When there is something with server',
+			schema: {
+				$status: 'fail',
+				$error: 'Something went wrong while getting quizzes'
+			}
+		};
+		*/
+	}
+}
+
+export async function enrollAExamineeInAQuiz(
+	req: RequestForProtectedRoute,
+	res: Response,
+	next: NextFunction
+) {
+	const user = req.user;
+	const userId = user._id;
+	let quizId = String(req.body.quizId??'');
+	
+	try {
+		if (!isValidMongoObjectId(quizId)) throw createAnError('Please send a valid quiz id',httpStatusCode.badRequest)
+		// TODO: Add logic to handle paid quizzes.
+		const updatedQuiz = await Quiz.updateOne(
+			{ _id: quizId },
+			{ $addToSet: { enrolledBy: new Schema.Types.ObjectId(userId) } }
+		);
+
+		if (updatedQuiz.modifiedCount === 0)throw createAnError('User is already enrolled in this quiz or quiz may not found',httpStatusCode.forbidden) 
+		res.status(httpStatusCode.noContent).json({
+			status: 'success'
+		})
+	} catch (error) {
+		next(error);
+		//--------------Implementation part is done ---------------------
+
+		//! Swagger docs
+        /*
+		#swagger.tags = ['Quiz'];
+		#swagger.description = 'Endpoint to enroll in a quiz';
+		#swagger.parameters['obj'] = {
+			in: 'body',
+			description: 'Quiz Id in which examinee want to enroll',
+			required: true,
+			schema: {
+				$quizId: '629ca3d78b22bd7a8ad4e47e'
+			}
+		};
+
+		#swagger.responses[204] = {
+			description: 'When quizzes are retrieved successfully',
+			schema: {
+				$status: 'success',
+			}
+		};
+		#swagger.responses[400] = {
+			description: 'When the quiz id is not a valid id',
+			schema: {
+				$status: 'fail',
+				$error: 'Please send a valid quiz id'
+			}
+		};
+		#swagger.responses[403] = {
+			description: 'When user is already enrolled in the quiz',
+			schema: {
+				$status: 'fail',
+				$error: 'User is already enrolled in this quiz or quiz may not found'
+			}
+		};
+		*/
+	}
 }
 
 export async function getAllUnEnrolledQuizForCurrentUser(
@@ -241,7 +318,7 @@ export async function getAllUnEnrolledQuizForCurrentUser(
 	if (user.role.toLowerCase() === 'examiner') {
 		try {
 			const examinerQuiz = await Quiz.find({
-				createdBy: { $ne: user._id },
+				createdBy: { $ne: user._id }
 			});
 			if (!examinerQuiz)
 				throw createAnError(
@@ -249,7 +326,7 @@ export async function getAllUnEnrolledQuizForCurrentUser(
 				);
 			let resObj = {
 				status: 'success',
-				quizzes: examinerQuiz,
+				quizzes: examinerQuiz
 			};
 			return responseHandler(res, httpStatusCode.ok, resObj);
 		} catch (error) {
@@ -258,7 +335,7 @@ export async function getAllUnEnrolledQuizForCurrentUser(
 	} else if (user.role.toLowerCase() === 'examinee') {
 		try {
 			const quizzes = await Quiz.find({
-				enrolledBy: { $nin: [user._id] },
+				enrolledBy: { $nin: [user._id] }
 			});
 			if (!quizzes)
 				throw createAnError(
@@ -266,7 +343,7 @@ export async function getAllUnEnrolledQuizForCurrentUser(
 				);
 			let resObj = {
 				status: 'success',
-				quizzes: quizzes,
+				quizzes: quizzes
 			};
 			return responseHandler(res, httpStatusCode.ok, resObj);
 		} catch (error) {
@@ -286,7 +363,7 @@ export async function saveQuizStartTime(
 	const user = req.user;
 	const payload = {
 		quizId: req.body.quizId,
-		startedBy: user._id,
+		startedBy: user._id
 	};
 	try {
 		if (!isValidMongoObjectId(payload.quizId))
@@ -294,7 +371,7 @@ export async function saveQuizStartTime(
 		const getQuizDetails = Quiz.findById(payload.quizId);
 		const getTimeForCurrentQuiz = QuizTimeTracker.findOne({
 			quizId: req.body.quizId,
-			startedBy: user._id,
+			startedBy: user._id
 		});
 		const isQuizPresent = await getQuizDetails;
 		const isTimeForCurrentQuizIsPresent = await getTimeForCurrentQuiz;
@@ -310,7 +387,7 @@ export async function saveQuizStartTime(
 		if (!isSaved)
 			throw createAnError('Something went wrong while saving time in db');
 		return res.status(httpStatusCode.noContent).json({
-			status: 'success',
+			status: 'success'
 		});
 	} catch (error) {
 		next(error);
@@ -328,7 +405,7 @@ export async function getQuizStartTime(
 		if (!isValidMongoObjectId(quizId))
 			throw createAnError('Please send a valid quiz id', 400);
 		const startTime = await QuizTimeTracker.find({
-			$and: [{ quizId: quizId, startedBy: user._id }],
+			$and: [{ quizId: quizId, startedBy: user._id }]
 		});
 		if (startTime.length === 0)
 			throw createAnError('Start time is not present in db', 404);
@@ -339,7 +416,7 @@ export async function getQuizStartTime(
 			);
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			startTime: startTime[0],
+			startTime: startTime[0]
 		});
 	} catch (error) {
 		next(error);
@@ -358,8 +435,8 @@ export async function getQuizzesHistory(
 			{
 				$and: [
 					{ enrolledBy: currentUser._id },
-					{ 'marks.examineeId': currentUser._id },
-				],
+					{ 'marks.examineeId': currentUser._id }
+				]
 			},
 			{ _id: 1, marks: 1, name: 1, quizDuration: 1 }
 		);
@@ -371,13 +448,13 @@ export async function getQuizzesHistory(
 				quizResult: getCurrentUserMarks(
 					quiz.marks,
 					currentUser._id.toString()
-				),
+				)
 			};
 		});
 
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			quizzesDetails: quizzesDetails,
+			quizzesDetails: quizzesDetails
 		});
 	} catch (error) {
 		next(error);
@@ -402,16 +479,16 @@ export async function submitQuizHandler(
 			);
 		let getQuestionList = Question.find(
 			{
-				quizzes: { $in: [quizId] },
+				quizzes: { $in: [quizId] }
 			},
 			{
 				_id: 1,
-				answers: 1,
+				answers: 1
 			}
 		).lean();
 		let getQuizTimeDetails = QuizTimeTracker.findOne({
 			quizId: quizId,
-			startedBy: user._id,
+			startedBy: user._id
 		}).lean();
 
 		let questionsList = await getQuestionList;
@@ -430,7 +507,7 @@ export async function submitQuizHandler(
 		const normalizeQuestionsDataFromDB = normalizeQuestionData(
 			questionsList.map((question) => ({
 				_id: question._id.toString(),
-				answers: question.answers,
+				answers: question.answers
 			}))
 		);
 		const normalizeQuestionsDataFromReqObj =
@@ -438,7 +515,7 @@ export async function submitQuizHandler(
 		const [
 			numberOfRightAnswers,
 			numberOfWrongAnswers,
-			numberSkippedQuestions,
+			numberSkippedQuestions
 		] = calculateNumberOfRightWrongAnswersAndSkippedQuestion(
 			normalizeQuestionsDataFromDB,
 			normalizeQuestionsDataFromReqObj
@@ -455,10 +532,10 @@ export async function submitQuizHandler(
 			numberOfRightAnswers,
 			numberOfWrongAnswers,
 			totalTimeTaken,
-			numberSkippedQuestions: numberSkippedQuestions,
+			numberSkippedQuestions: numberSkippedQuestions
 		};
 		const updatedQuiz = await Quiz.findByIdAndUpdate(quizId, {
-			$push: { marks: marksPayload },
+			$push: { marks: marksPayload }
 		});
 		if (!updatedQuiz)
 			throw createAnError(
@@ -472,13 +549,15 @@ export async function submitQuizHandler(
 				numberOfRightAnswers: numberOfRightAnswers,
 				numberOfWrongAnswers: numberOfWrongAnswers,
 				numberSkippedQuestions: numberSkippedQuestions,
-				totalTimeTaken: totalTimeTaken,
-			},
+				totalTimeTaken: totalTimeTaken
+			}
 		});
 	} catch (error) {
 		next(error);
 	}
 }
+
+// Only need for testing
 function delayForGivenTime(time: number) {
 	return new Promise((res, rej) => {
 		setTimeout(() => {
