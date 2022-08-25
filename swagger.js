@@ -6,7 +6,7 @@ const doc = {
 		title: 'Quiz App',
 		description: 'Documentation of quiz app endpoints'
 	},
-	host: 'localhost:8000',
+	host: 'https://a-master-quiz-app.herokuapp.com',
 	basePath: '/',
 	schemes: ['http', 'https'],
 	consumes: ['application/json'],
