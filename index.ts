@@ -68,7 +68,9 @@ app.listen(PORT, () => {
 	console.log(`server is running on PORT ${PORT}`);
 });
 
-// For Debugging
+
+// Homepage
 app.get('/', (req, res) => {
-	res.send('<h1>App is running</h1>');
+	const homepageTemplate = '<div style="display: flex; flex-direction: column; justify-content: center; align-items: center;"> <h1>Welcome to Quiz App.</h1> <p> Please visit <b>/doc</b> path to explore our endpoints.</p> </div>'
+	res.send(homepageTemplate);
 });

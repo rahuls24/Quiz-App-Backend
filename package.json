@@ -7,7 +7,7 @@
 		"start": "node .",
 		"format": "prettier --write \"src/**/*.{ts,tsx}\"",
 		"dev": "nodemon index.ts",
-		"build": "tsc -p ."
+		"build": "node swagger.js && tsc -p ."
 	},
 	"author": "Rahul Kumar",
 	"license": "ISC",
