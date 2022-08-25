@@ -58,7 +58,7 @@ export function isValidReqBodyComingFromEmailLogin(
 }
 type ReqQuizFromSaveQuiz = {
 	name: string;
-	topics: string;
+	topics: Array<string>;
 	createdBy: string;
 	enrolledBy: Array<string>;
 	quizDuration: string;
@@ -68,8 +68,6 @@ export function isValidReqBodyComingFromSaveQuiz(
 	reqQuiz: ReqQuizFromSaveQuiz
 ): [boolean, string] {
 	if (reqQuiz.name.length < 0) return [false, 'Please provide quiz name'];
-	if (reqQuiz.topics.length === 0)
-		return [false, 'Quiz topic should have at least one character'];
 	if (isNaN(Number(reqQuiz.quizDuration)))
 		return [false, 'Please provide a valid number for quiz duration'];
 }
@@ -90,12 +88,14 @@ export function isValidQuestionData(question: any = {}): boolean {
 	if (
 		!(
 			typeof question.questionType === 'string' &&
+			/* cspell: disable-next-line */
 			(question.questionType.toLowerCase() === 'singleanswer' ||
+			    /* cspell: disable-next-line */
 				question.questionType.toLowerCase() === 'multipleanswer')
 		)
 	)
+		
 		return false;
-
 	if (
 		!(
 			Array.isArray(question.quizzes) &&

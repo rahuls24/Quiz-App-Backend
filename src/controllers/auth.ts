@@ -8,8 +8,8 @@ import {
 } from '../utils/errorHandler';
 import { httpStatusCode, responseHandler } from '../utils/responseHandler';
 import {
-	isValidReqBodyComingFromEmailRegister,
-	isValidReqBodyComingFromEmailLogin
+	isValidReqBodyComingFromEmailLogin,
+	isValidReqBodyComingFromEmailRegister
 } from '../utils/validators';
 import { RequestForProtectedRoute } from './../interfaces/common';
 export async function createUserWithEmailAndPassword(
@@ -25,10 +25,8 @@ export async function createUserWithEmailAndPassword(
 
 	try {
 		// Checking whether we are getting valid data from request body or not
-		const [
-			isReqBodyContainsValidData,
-			errorMsg
-		] = isValidReqBodyComingFromEmailRegister(newUser);
+		const [isReqBodyContainsValidData, errorMsg] =
+			isValidReqBodyComingFromEmailRegister(newUser);
 		if (!isReqBodyContainsValidData)
 			throw createAnError(errorMsg, httpStatusCode.badRequest);
 
@@ -112,10 +110,8 @@ export async function signinWithEmailAndPassword(
 	};
 	try {
 		// Validation of body data start from here.
-		const [
-			isReqBodyContainsValidData,
-			errorMsg
-		] = isValidReqBodyComingFromEmailLogin(currentUser);
+		const [isReqBodyContainsValidData, errorMsg] =
+			isValidReqBodyComingFromEmailLogin(currentUser);
 		if (!isReqBodyContainsValidData)
 			throw createAnError(errorMsg, httpStatusCode.badRequest);
 		const user = await User.findOne(

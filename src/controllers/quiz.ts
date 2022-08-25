@@ -29,7 +29,7 @@ export async function saveQuiz(
 	const user = req.user;
 	const newQuiz = {
 		name: String(req.body.name ?? ''),
-		topics: String(req.body.topics ?? 'misc'),
+		topics: String(req.body.topics ?? 'misc').split(','),
 		createdBy: String(user._id ?? ''),
 		enrolledBy: [user._id],
 		quizDuration: String(req.body.totalTime),
@@ -39,8 +39,6 @@ export async function saveQuiz(
 			isValidReqBodyComingFromSaveQuiz(newQuiz);
 		if (!isReqBodyContainsValidData)
 			throw createAnError(errorMsg, httpStatusCode.badRequest);
-		// topics should be an array
-		newQuiz.topics = newQuiz.topics.split(',');
 		const quiz = await new Quiz(newQuiz).save();
 		if (!quiz)
 			throw createAnError('Something went wrong while saving the quiz');
@@ -49,7 +47,7 @@ export async function saveQuiz(
 		});
 	} catch (error) {
 		next(error);
-		//--------------Implementaion part is done ---------------------
+		//--------------Implementation part is done ---------------------
 
 		//! Swagger docs
 		/* 

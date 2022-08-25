@@ -68,7 +68,6 @@ const doc = {
 		BadRequestForSaveQuiz: {
 			'@enum': [
 				'Please provide quiz name',
-				'Quiz topic should have at least one character',
 				'Please provide a valid number for quiz duration',
 			],
 		},

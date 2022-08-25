@@ -36,7 +36,7 @@ export async function saveQuestionsForTheQuiz(
 		});
 	} catch (error) {
 		next(error);
-		//--------------Implementaion part is done ---------------------
+		//--------------Implementation part is done ---------------------
 
 		//! Swagger docs
 		/*
@@ -160,7 +160,7 @@ export async function getAllQuestionsOfAQuiz(
 		});
 	} catch (error) {
 		next(error);
-		//--------------Implementaion part is done ---------------------
+		//--------------Implementation part is done ---------------------
 
 		//! Swagger docs
 		/*

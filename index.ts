@@ -1,7 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
+import fs from 'fs';
 import { connect, connection } from 'mongoose';
 import passport from 'passport';
+import { serve, setup } from 'swagger-ui-express';
 import { commonErrorMiddleware } from './src/middlewares/errorHandler';
 import { morganMiddleware } from './src/middlewares/morgan.middleware';
 import { router as authRouter } from './src/routes/auth';
@@ -10,8 +12,6 @@ import { router as quizRouter } from './src/routes/quiz';
 import examineeStrategy from './src/strategies/passportJWTStrategies/examinee';
 import examinerStrategy from './src/strategies/passportJWTStrategies/examiner';
 import registerUserStrategy from './src/strategies/passportJWTStrategies/registerUser';
-import fs from 'fs';
-import { serve, setup } from 'swagger-ui-express';
 import swaggerFile from './swagger-output.json';
 
 const app = express();
