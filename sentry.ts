@@ -8,7 +8,7 @@ import '@sentry/tracing';
 // Unused named imports are not guaranteed to patch the global hub.
 
 Sentry.init({
-	dsn: 'https://e9784958283b41f1ab7c8b41f7c2d652@o1091405.ingest.sentry.io/6683210',
+	dsn: process.env.sentryDNS,
 	integrations: [
 		// enable HTTP calls tracing
 		new Sentry.Integrations.Http({ tracing: true })
