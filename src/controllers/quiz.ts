@@ -1,5 +1,5 @@
 import { NextFunction, Response } from 'express';
-import { Schema } from 'mongoose';
+import { Schema, Types } from 'mongoose';
 import { RequestForProtectedRoute } from '../interfaces/common';
 import { Question } from '../models/question';
 import { createAnError, createFailureResponseObj } from '../utils/errorHandler';
@@ -264,7 +264,7 @@ export async function enrollAExamineeInAQuiz(
 		// TODO: Add logic to handle paid quizzes.
 		const updatedQuiz = await Quiz.updateOne(
 			{ _id: quizId },
-			{ $addToSet: { enrolledBy: new Schema.Types.ObjectId(userId) } }
+			{ $addToSet: { enrolledBy: new Types.ObjectId(userId) } }
 		);
 
 		if (updatedQuiz.modifiedCount === 0)

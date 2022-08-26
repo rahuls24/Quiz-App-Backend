@@ -1,5 +1,5 @@
 import { NextFunction, Response } from 'express';
-import { Schema } from 'mongoose';
+import { Types } from 'mongoose';
 import { createAnError } from '../utils/errorHandler';
 import { isUserAlreadyGivenQuiz } from '../utils/quizFunctions';
 import { isValidMongoObjectId, isValidQuestionData } from '../utils/validators';
@@ -118,11 +118,7 @@ export async function getAllQuestionsOfAQuiz(
 			);
 		// Hiding questions if user is not enrolled to current quiz
 		if (user.role === 'examinee') {
-			if (
-				!quizData.enrolledBy.includes(
-					new Schema.Types.ObjectId(user._id)
-				)
-			)
+			if (!quizData.enrolledBy.includes(new Types.ObjectId(user._id)))
 				shouldOnlyGiveTotalNoOfQuestion = true;
 		}
 		let questionsList = await Question.find(
