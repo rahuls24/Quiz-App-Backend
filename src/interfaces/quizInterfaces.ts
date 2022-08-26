@@ -1,8 +1,8 @@
-import { Schema } from 'mongoose';
+import { Types } from 'mongoose';
 
 export interface IMarks {
 	marks: number;
-	examineeId: Schema.Types.ObjectId;
+	examineeId: Types.ObjectId;
 	numberOfRightAnswers: number;
 	numberOfWrongAnswers: number;
 	numberSkippedQuestions: number;
@@ -11,8 +11,8 @@ export interface IMarks {
 export interface IQuiz {
 	name: string;
 	topics: Array<string>;
-	createdBy: Schema.Types.ObjectId;
-	enrolledBy: Array<Schema.Types.ObjectId>;
+	createdBy: Types.ObjectId;
+	enrolledBy: Array<Types.ObjectId>;
 	marks: Array<IMarks>;
 	isFree: boolean;
 	price: number;
@@ -22,7 +22,7 @@ export interface IQuiz {
 }
 
 export interface IQuizTimeTracker {
-	quizId: Schema.Types.ObjectId;
+	quizId: Types.ObjectId;
 	startedAt: Date;
-	startedBy: Schema.Types.ObjectId;
+	startedBy: Types.ObjectId;
 }

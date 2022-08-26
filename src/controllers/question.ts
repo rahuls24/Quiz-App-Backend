@@ -1,5 +1,4 @@
 import { NextFunction, Response } from 'express';
-import { Types } from 'mongoose';
 import { createAnError } from '../utils/errorHandler';
 import { isUserAlreadyGivenQuiz } from '../utils/quizFunctions';
 import { isValidMongoObjectId, isValidQuestionData } from '../utils/validators';
@@ -32,7 +31,7 @@ export async function saveQuestionsForTheQuiz(
 				'Something went wrong while saving the questions into db. Please try again'
 			);
 		res.status(httpStatusCode.created).json({
-			status: 'success',
+			status: 'success'
 		});
 	} catch (error) {
 		next(error);
@@ -104,7 +103,7 @@ export async function getAllQuestionsOfAQuiz(
 			_id: 0,
 			enrolledBy: 1,
 			createdBy: 1,
-			marks: 1,
+			marks: 1
 		}).lean();
 		if (!quizData)
 			throw createAnError(
@@ -118,12 +117,12 @@ export async function getAllQuestionsOfAQuiz(
 			);
 		// Hiding questions if user is not enrolled to current quiz
 		if (user.role === 'examinee') {
-			if (!quizData.enrolledBy.includes(new Types.ObjectId(user._id)))
+			if (!quizData.enrolledBy.map(String).includes(String(user._id)))
 				shouldOnlyGiveTotalNoOfQuestion = true;
 		}
 		let questionsList = await Question.find(
 			{
-				quizzes: { $in: [quizId] },
+				quizzes: { $in: [quizId] }
 			},
 			{
 				_id: 1,
@@ -131,10 +130,13 @@ export async function getAllQuestionsOfAQuiz(
 				questionType: 1,
 				options: 1,
 				answers: 1,
-				images: 1,
+				images: 1
 			}
 		).lean();
-
+		console.log(
+			shouldOnlyGiveTotalNoOfQuestion,
+			quizData.enrolledBy.map(String).includes(user._id)
+		);
 		if (!questionsList)
 			throw createAnError(
 				'Something went wrong while fetching questions from DB'
@@ -148,11 +150,11 @@ export async function getAllQuestionsOfAQuiz(
 		if (shouldOnlyGiveTotalNoOfQuestion)
 			return res.status(httpStatusCode.ok).json({
 				status: 'success',
-				totalQuestions: questionsList.length,
+				totalQuestions: questionsList.length
 			});
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			questions: questionsList,
+			questions: questionsList
 		});
 	} catch (error) {
 		next(error);
