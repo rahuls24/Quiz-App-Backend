@@ -2,25 +2,23 @@ import { compare, genSaltSync, hashSync } from 'bcryptjs';
 import { NextFunction, Request, Response } from 'express';
 import { sign } from 'jsonwebtoken';
 import { User } from '../models/user';
-import {
-	createAnError,
-	errorHandlerOfRequestCatchBlock
-} from '../utils/errorHandler';
+import { createAnError } from '../utils/errorHandler';
 import { httpStatusCode, responseHandler } from '../utils/responseHandler';
 import {
 	isValidReqBodyComingFromEmailLogin,
-	isValidReqBodyComingFromEmailRegister
+	isValidReqBodyComingFromEmailRegister,
 } from '../utils/validators';
 import { RequestForProtectedRoute } from './../interfaces/common';
 export async function createUserWithEmailAndPassword(
 	req: Request,
-	res: Response
+	res: Response,
+	next: NextFunction
 ) {
 	const newUser = {
 		name: String(req.body.name ?? ''),
 		email: String(req.body.email ?? ''),
 		password: String(req.body.password ?? ''),
-		role: String(req.body.role ?? '')
+		role: String(req.body.role ?? ''),
 	};
 
 	try {
@@ -43,16 +41,15 @@ export async function createUserWithEmailAndPassword(
 		);
 		const registerUser = await new User(newUser).save();
 		if (!registerUser)
-		throw createAnError(
-			'Something went wrong while saving the user into db',
-			httpStatusCode.internalServerError
-		);
+			throw createAnError(
+				'Something went wrong while saving the user into db',
+				httpStatusCode.internalServerError
+			);
 		res.status(httpStatusCode.created).json({
-			status:'success'
-		})
+			status: 'success',
+		});
 	} catch (error) {
-		return errorHandlerOfRequestCatchBlock(res, error);
-
+		next(error);
 		//! Swagger docs
 
 		/* #swagger.tags = ['Auth'];
@@ -102,7 +99,7 @@ export async function signinWithEmailAndPassword(
 ) {
 	const currentUser = {
 		email: String(req.body.email ?? ''),
-		password: String(req.body.password ?? '')
+		password: String(req.body.password ?? ''),
 	};
 	try {
 		// Validation of body data start from here.
@@ -133,20 +130,20 @@ export async function signinWithEmailAndPassword(
 			name: user.name,
 			email: user.email,
 			role: user.role,
-			isVerified: user.isVerified
+			isVerified: user.isVerified,
 		};
 
 		const bearerToken = sign(
 			{
 				exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-				data: userDataForHash
+				data: userDataForHash,
 			},
 			process.env.JWTSecretKey ?? 'defaultJwtKey'
 		);
 
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			token: 'Bearer ' + bearerToken
+			token: 'Bearer ' + bearerToken,
 		});
 	} catch (error) {
 		next(error);
@@ -203,12 +200,12 @@ export async function getUserDetails(
 	try {
 		const currentUser = await User.findById(user._id, {
 			password: 0,
-			__v: 0
+			__v: 0,
 		});
 		if (currentUser) {
 			let resObj = {
 				status: 'success',
-				user: currentUser
+				user: currentUser,
 			};
 			return responseHandler(res, httpStatusCode.ok, resObj);
 		}
