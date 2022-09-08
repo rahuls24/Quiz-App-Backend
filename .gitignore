@@ -9,3 +9,4 @@ data-modal.txt
 settings.json
 /yarn-error.log
 /yarn.lock
+.env
