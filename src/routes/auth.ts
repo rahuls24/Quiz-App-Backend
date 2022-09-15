@@ -3,7 +3,8 @@ import passport from 'passport';
 import {
 	createUserWithEmailAndPassword,
 	getUserDetails,
-	signinWithEmailAndPassword
+	signinWithEmailAndPassword,
+	signinWithGoogle
 } from './../controllers/auth';
 
 export const router = Router();
@@ -17,3 +18,5 @@ router.get(
 	passport.authenticate('user', { session: false }),
 	getUserDetails
 );
+
+router.get('/signin-with-google/:token/:role',signinWithGoogle)

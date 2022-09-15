@@ -1,12 +1,13 @@
 import { compare, genSaltSync, hashSync } from 'bcryptjs';
 import { NextFunction, Request, Response } from 'express';
+import { OAuth2Client } from 'google-auth-library';
 import { sign } from 'jsonwebtoken';
 import { User } from '../models/user';
 import { createAnError } from '../utils/errorHandler';
 import { httpStatusCode, responseHandler } from '../utils/responseHandler';
 import {
 	isValidReqBodyComingFromEmailLogin,
-	isValidReqBodyComingFromEmailRegister,
+	isValidReqBodyComingFromEmailRegister
 } from '../utils/validators';
 import { RequestForProtectedRoute } from './../interfaces/common';
 export async function createUserWithEmailAndPassword(
@@ -18,7 +19,7 @@ export async function createUserWithEmailAndPassword(
 		name: String(req.body.name ?? ''),
 		email: String(req.body.email ?? ''),
 		password: String(req.body.password ?? ''),
-		role: String(req.body.role ?? ''),
+		role: String(req.body.role ?? '')
 	};
 
 	try {
@@ -45,8 +46,8 @@ export async function createUserWithEmailAndPassword(
 				'Something went wrong while saving the user into db',
 				httpStatusCode.internalServerError
 			);
-		res.status(httpStatusCode.created).json({
-			status: 'success',
+		return res.status(httpStatusCode.created).json({
+			status: 'success'
 		});
 	} catch (error) {
 		next(error);
@@ -99,7 +100,7 @@ export async function signinWithEmailAndPassword(
 ) {
 	const currentUser = {
 		email: String(req.body.email ?? ''),
-		password: String(req.body.password ?? ''),
+		password: String(req.body.password ?? '')
 	};
 	try {
 		// Validation of body data start from here.
@@ -130,20 +131,20 @@ export async function signinWithEmailAndPassword(
 			name: user.name,
 			email: user.email,
 			role: user.role,
-			isVerified: user.isVerified,
+			isVerified: user.isVerified
 		};
 
 		const bearerToken = sign(
 			{
 				exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-				data: userDataForHash,
+				data: userDataForHash
 			},
 			process.env.JWTSecretKey ?? 'defaultJwtKey'
 		);
 
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			token: 'Bearer ' + bearerToken,
+			token: 'Bearer ' + bearerToken
 		});
 	} catch (error) {
 		next(error);
@@ -200,12 +201,12 @@ export async function getUserDetails(
 	try {
 		const currentUser = await User.findById(user._id, {
 			password: 0,
-			__v: 0,
+			__v: 0
 		});
 		if (currentUser) {
 			let resObj = {
 				status: 'success',
-				user: currentUser,
+				user: currentUser
 			};
 			return responseHandler(res, httpStatusCode.ok, resObj);
 		}
@@ -238,5 +239,47 @@ export async function getUserDetails(
                 },
             };
       */
+	}
+}
+
+// Social Login
+export async function signinWithGoogle(
+	req: Request,
+	res: Response,
+	next: NextFunction
+) {
+	const token = String(req.params.token ?? '');
+	console.log(req.params.role);
+	try {
+		const client = new OAuth2Client(process.env.googleClintID);
+		const ticket = await client.verifyIdToken({
+			idToken: token,
+			audience: process.env.googleClintID
+		});
+		// payload: {
+		// 	iss: 'https://accounts.google.com',
+		// 	nbf: 1663228319,
+		// 	aud: '861995391720-na3k1i4mligk0t3jdu95ag2o4abbppk6.apps.googleusercontent.com',
+		// 	sub: '103978681801242188832',
+		// 	email: 'itsrahuls24@gmail.com',
+		// 	email_verified: true,
+		// 	azp: '861995391720-na3k1i4mligk0t3jdu95ag2o4abbppk6.apps.googleusercontent.com',
+		// 	name: 'Rahul Kumar',
+		// 	picture: 'https://lh3.googleusercontent.com/a-/AFdZucpQlyl48xU-YQBMmD6xk02O8Jzmp90Uq4Lpxxzt=s96-c',
+		// 	given_name: 'Rahul',
+		// 	family_name: 'Kumar',
+		// 	iat: 1663228619,
+		// 	exp: 1663232219,
+		// 	jti: '602ab77194a826193e5e060d960fa7cfe1ece08e'
+		//   }
+		if (!('payload' in ticket))
+			throw createAnError(
+				'Something went wrong while validating token from google. Please try again.'
+			);
+		const { email, name, picture, email_verified } = ticket.getPayload();
+
+		return res.send('ok');
+	} catch (error) {
+		next(error);
 	}
 }
