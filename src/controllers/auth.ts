@@ -1,14 +1,24 @@
 import { compare, genSaltSync, hashSync } from 'bcryptjs';
 import { NextFunction, Request, Response } from 'express';
+import { OAuth2Client } from 'google-auth-library';
 import { sign } from 'jsonwebtoken';
 import { User } from '../models/user';
 import { createAnError } from '../utils/errorHandler';
 import { httpStatusCode, responseHandler } from '../utils/responseHandler';
 import {
 	isValidReqBodyComingFromEmailLogin,
-	isValidReqBodyComingFromEmailRegister,
+	isValidReqBodyComingFromEmailRegister
 } from '../utils/validators';
+import {
+	isUserPresentInDB,
+	saveUser,
+	generateBearerToken,
+	isPasswordMatched
+} from '../utils/authFunctions';
 import { RequestForProtectedRoute } from './../interfaces/common';
+import { RegisterUserPayload } from '../interfaces/authInterfaces';
+import { pick } from 'ramda';
+import { v4 as uuidv4 } from 'uuid';
 export async function createUserWithEmailAndPassword(
 	req: Request,
 	res: Response,
@@ -18,35 +28,48 @@ export async function createUserWithEmailAndPassword(
 		name: String(req.body.name ?? ''),
 		email: String(req.body.email ?? ''),
 		password: String(req.body.password ?? ''),
-		role: String(req.body.role ?? ''),
+		role: String(req.body.role ?? '')
 	};
 
 	try {
 		// Checking whether we are getting valid data from request body or not
 		const [isReqBodyContainsValidData, errorMsg] =
 			isValidReqBodyComingFromEmailRegister(newUser);
+
 		if (!isReqBodyContainsValidData)
 			throw createAnError(errorMsg, httpStatusCode.badRequest);
 
-		const isUserExists = await User.findOne({ email: newUser.email });
+		const [isUserExists] = await isUserPresentInDB(newUser.email);
+
 		if (isUserExists)
 			throw createAnError(
 				'User is already registered.',
 				httpStatusCode.badRequest
 			);
-		// Generating the hash of password
-		newUser.password = hashSync(
-			newUser.password,
-			genSaltSync(Number(process.env.bcryptSaltRounds))
+		const [isUserRegister, registerUser] = await saveUser(
+			// We have already checking for validation of req object by calling isValidReqBodyComingFromEmailRegister function. So this explicit type casting will not cause any problem.
+			newUser as RegisterUserPayload
 		);
-		const registerUser = await new User(newUser).save();
-		if (!registerUser)
+
+		if (!isUserRegister)
 			throw createAnError(
 				'Something went wrong while saving the user into db',
 				httpStatusCode.internalServerError
 			);
-		res.status(httpStatusCode.created).json({
+
+		const requiredPropertyForHashing = [
+			'_id',
+			'name',
+			'email',
+			'role',
+			'isVerified'
+		];
+		const bearerToken = generateBearerToken(
+			pick(requiredPropertyForHashing, registerUser)
+		);
+		return res.status(httpStatusCode.created).json({
 			status: 'success',
+			token: 'Bearer ' + bearerToken
 		});
 	} catch (error) {
 		next(error);
@@ -69,12 +92,13 @@ export async function createUserWithEmailAndPassword(
 			}
 		};
 
-		#swagger.responses[201] = {
-			description: 'User is created successfully.',
-			schema: {
-				$status: 'success',
-			}
-		};
+		 #swagger.responses[201] = {
+                description: 'Bearer Token is successfully generated.',
+                schema: {
+                    $status: 'success',
+                    $token: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
+                },
+            };
 
 		#swagger.responses[400] = {
 			description: 'When there is something wrong with request body.',
@@ -97,26 +121,28 @@ export async function signinWithEmailAndPassword(
 	res: Response,
 	next: NextFunction
 ) {
-	const currentUser = {
+	const currentUserFromReq = {
 		email: String(req.body.email ?? ''),
-		password: String(req.body.password ?? ''),
+		password: String(req.body.password ?? '')
 	};
 	try {
 		// Validation of body data start from here.
 		const [isReqBodyContainsValidData, errorMsg] =
-			isValidReqBodyComingFromEmailLogin(currentUser);
+			isValidReqBodyComingFromEmailLogin(currentUserFromReq);
+
 		if (!isReqBodyContainsValidData)
 			throw createAnError(errorMsg, httpStatusCode.badRequest);
-		const user = await User.findOne(
-			{ email: currentUser.email },
-			{ __v: 0 }
-		).lean();
-		if (!user)
+
+		const [isUserExists, currentUserFromDB] = await isUserPresentInDB(
+			currentUserFromReq.email
+		);
+
+		if (!isUserExists)
 			throw createAnError('User is not found', httpStatusCode.notFound);
 
-		const isPasswordMatch = await compare(
-			currentUser.password,
-			user.password
+		const isPasswordMatch = await isPasswordMatched(
+			currentUserFromReq.password,
+			currentUserFromDB.password
 		);
 
 		if (!isPasswordMatch)
@@ -124,26 +150,20 @@ export async function signinWithEmailAndPassword(
 				'Password is not correct',
 				httpStatusCode.unauthorized
 			);
-
-		const userDataForHash = {
-			_id: user._id,
-			name: user.name,
-			email: user.email,
-			role: user.role,
-			isVerified: user.isVerified,
-		};
-
-		const bearerToken = sign(
-			{
-				exp: Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-				data: userDataForHash,
-			},
-			process.env.JWTSecretKey ?? 'defaultJwtKey'
+		const requiredPropertyForHashing = [
+			'_id',
+			'name',
+			'email',
+			'role',
+			'isVerified'
+		];
+		const bearerToken = generateBearerToken(
+			pick(requiredPropertyForHashing, currentUserFromDB)
 		);
 
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			token: 'Bearer ' + bearerToken,
+			token: 'Bearer ' + bearerToken
 		});
 	} catch (error) {
 		next(error);
@@ -190,7 +210,102 @@ export async function signinWithEmailAndPassword(
         */
 	}
 }
+// Social Login
+export async function signinWithGoogle(
+	req: Request,
+	res: Response,
+	next: NextFunction
+) {
+	const token = String(req.params.token ?? '');
+	const userRole = String(req.params.role ?? '');
+	const VALID_ROLE = ['examiner', 'examinee'];
+	try {
+		// Checking the userRole is valid or not
+		if (!VALID_ROLE.includes(userRole))
+			throw createAnError(
+				'Please provide a valid role. Role should be either examinee | examiner',
+				400
+			);
 
+		// setup for token verification from google-auth-library.
+		const client = new OAuth2Client(process.env.googleClintID);
+		const ticket = await client.verifyIdToken({
+			idToken: token,
+			audience: process.env.googleClintID
+		});
+		const {
+			email,
+			name,
+			picture = '',
+			email_verified
+		} = ticket.getPayload();
+
+		let [isUserExists, currentUser] = await isUserPresentInDB(email);
+
+		if (!isUserExists) {
+			const registerUserPayload = {
+				name,
+				email,
+				password: uuidv4(),
+				role: userRole,
+				isVerified: email_verified,
+				profileImageUrl: picture
+			};
+			const [isUserRegister, registerUser] = await saveUser(
+				// We have already checking for validation of req object by calling isValidReqBodyComingFromEmailRegister function. So this explicit type casting will not cause any problem.
+				registerUserPayload as RegisterUserPayload
+			);
+
+			if (!isUserRegister)
+				throw createAnError(
+					'Something went wrong while saving the user into db',
+					httpStatusCode.internalServerError
+				);
+
+			// Assign the registerUser value to currentUser
+			currentUser = registerUser;
+		}
+
+		const requiredPropertyForHashing = [
+			'_id',
+			'name',
+			'email',
+			'role',
+			'isVerified'
+		];
+		const bearerToken = generateBearerToken(
+			pick(requiredPropertyForHashing, currentUser)
+		);
+		return res
+			.status(isUserExists ? httpStatusCode.ok : httpStatusCode.created)
+			.json({
+				status: 'success',
+				token: 'Bearer ' + bearerToken
+			});
+	} catch (error) {
+		next(error);
+		//! Swagger docs
+
+		/*
+            #swagger.tags = ['Auth'];
+            #swagger.description = 'Endpoint to sign in via google';
+            #swagger.responses[200] = {
+                description: 'User successfully obtained.',
+                schema: {
+                    $status: 'success',
+                    $user: { $ref: '#/definitions/User' },
+                },
+            };
+            #swagger.responses[400] = {
+                description: 'when role is not valid',
+                schema: {
+                    $status: 'fail',
+                    $error: 'Please provide a valid role. Role should be either examinee | examiner',
+                },
+            };
+      */
+	}
+}
 export async function getUserDetails(
 	req: RequestForProtectedRoute,
 	res: Response,
@@ -200,12 +315,12 @@ export async function getUserDetails(
 	try {
 		const currentUser = await User.findById(user._id, {
 			password: 0,
-			__v: 0,
-		});
+			__v: 0
+		}).lean();
 		if (currentUser) {
 			let resObj = {
 				status: 'success',
-				user: currentUser,
+				user: currentUser
 			};
 			return responseHandler(res, httpStatusCode.ok, resObj);
 		}
@@ -237,6 +352,13 @@ export async function getUserDetails(
                     $error: 'No user found in DB.',
                 },
             };
+			#swagger.responses[500] = {
+			description: 'When there is something wrong with server',
+			schema: {
+				$status: 'fail',
+				$error: 'Something went wrong while saving the user into db',
+			}
+		};
       */
 	}
 }

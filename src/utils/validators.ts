@@ -27,7 +27,6 @@ type ReqUserFormEmailRegister = {
 export function isValidReqBodyComingFromEmailRegister(
 	reqUser: ReqUserFormEmailRegister
 ): [boolean, string] {
-	const VALID_USER_ROLE = ['examinee', 'examiner'];
 	if (Object.keys(reqUser).some(isEmptyString))
 		return [false, 'Please provide value for all the parameter'];
 	// Individual validation
@@ -37,9 +36,13 @@ export function isValidReqBodyComingFromEmailRegister(
 		return [false, 'Password should be of minimum 6 characters'];
 	if (reqUser.name.length < 3)
 		return [false, 'Name should be of minimum 6 characters'];
-	if (!VALID_USER_ROLE.includes(reqUser.role.toLowerCase()))
+	if (!isValidRole(reqUser.role))
 		return [false, 'Role will be either examinee or examiner'];
 	return [true, ''];
+}
+export function isValidRole(role:string){
+	const VALID_USER_ROLE = ['examinee', 'examiner'];
+	return VALID_USER_ROLE.includes(role.toLowerCase())
 }
 
 type ReqUserFromEmailLogin = {

@@ -1,6 +1,7 @@
-import { model, Schema, Model, ValidatorProps } from 'mongoose';
+import { model, Schema } from 'mongoose';
+import { IUser } from '../interfaces/authInterfaces';
 import { isValidEmail } from '../utils/validators';
-const userSchema = new Schema({
+const userSchema = new Schema<IUser>({
 	name: {
 		type: String,
 		validate: {
@@ -41,6 +42,10 @@ const userSchema = new Schema({
 	isVerified: {
 		type: Boolean,
 		default: false
+	},
+	profileImageUrl:{
+		type:String,
+		required: false,
 	}
 });
 // Creating index base on email

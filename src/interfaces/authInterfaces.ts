@@ -1,10 +1,15 @@
-export interface IUser {
+export interface RegisterUserPayload {
 	name: string;
 	email: string;
 	password: string;
-	phone: string;
 	role: 'examiner' | 'examinee' | 'admin';
+	phone?: string;
+}
+export interface IUser extends RegisterUserPayload {
+	_id:string;
 	quizzes: string[];
-	registerOn?: Date;
-	isVerified?: boolean;
+	registerOn: Date;
+	isVerified: boolean;
+	profileImageUrl?:string,
+	
 }

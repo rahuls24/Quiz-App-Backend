@@ -5,7 +5,7 @@
     "title": "Quiz App",
     "description": "Documentation of quiz app endpoints"
   },
-  "host": "localhost:8000",
+  "host": "https://a-master-quiz-app.herokuapp.com",
   "basePath": "/",
   "tags": [
     {
@@ -88,17 +88,22 @@
         ],
         "responses": {
           "201": {
-            "description": "User is created successfully.",
+            "description": "Bearer Token is successfully generated.",
             "schema": {
               "type": "object",
               "properties": {
                 "status": {
                   "type": "string",
                   "example": "success"
+                },
+                "token": {
+                  "type": "string",
+                  "example": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
                 }
               },
               "required": [
-                "status"
+                "status",
+                "token"
               ],
               "xml": {
                 "name": "main"
@@ -308,6 +313,29 @@
                 "name": "main"
               }
             }
+          },
+          "500": {
+            "description": "When there is something wrong with server",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Something went wrong while saving the user into db"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
           }
         },
         "security": [
@@ -315,6 +343,75 @@
             "apiKeyAuth": []
           }
         ]
+      }
+    },
+    "/api/auth/signin-with-google/{token}/{role}": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "description": "Endpoint to sign in via google",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "role",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User successfully obtained.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "success"
+                },
+                "user": {
+                  "$ref": "#/definitions/User"
+                }
+              },
+              "required": [
+                "status",
+                "user"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          },
+          "400": {
+            "description": "when role is not valid",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "example": "fail"
+                },
+                "error": {
+                  "type": "string",
+                  "example": "Please provide a valid role. Role should be either examinee | examiner"
+                }
+              },
+              "required": [
+                "status",
+                "error"
+              ],
+              "xml": {
+                "name": "main"
+              }
+            }
+          }
+        }
       }
     },
     "/api/quiz/save-a-quiz": {
