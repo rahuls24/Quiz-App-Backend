@@ -133,10 +133,6 @@ export async function getAllQuestionsOfAQuiz(
 				images: 1
 			}
 		).lean();
-		console.log(
-			shouldOnlyGiveTotalNoOfQuestion,
-			quizData.enrolledBy.map(String).includes(user._id)
-		);
 		if (!questionsList)
 			throw createAnError(
 				'Something went wrong while fetching questions from DB'

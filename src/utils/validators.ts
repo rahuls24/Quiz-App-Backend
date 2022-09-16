@@ -2,15 +2,14 @@ import { Types } from 'mongoose';
 import { equals } from 'ramda';
 import isEmail from 'validator/lib/isEmail';
 import isEmpty from 'validator/lib/isEmpty';
-import { CommonObjectWithStringKey } from './../interfaces/common';
 
-export function isValidEmail(email: string): Boolean {
+export function isValidEmail(email: string): boolean {
 	return isEmail(email);
 }
 export function isEmptyString(str: string) {
 	return isEmpty(str, { ignore_whitespace: true });
 }
-export function isValidMongoObjectId(objectId: any): Boolean {
+export function isValidMongoObjectId(objectId: any): boolean {
 	try {
 		return Types.ObjectId.isValid(objectId);
 	} catch (error) {
@@ -71,7 +70,7 @@ type ReqQuizFromSaveQuiz = {
 export function isValidReqBodyComingFromSaveQuiz(
 	reqQuiz: ReqQuizFromSaveQuiz
 ): [boolean, string] {
-	if (reqQuiz.name.length < 0) return [false, 'Please provide quiz name'];
+	if (reqQuiz.name.length === 0) return [false, 'Please provide quiz name'];
 	if (isNaN(Number(reqQuiz.quizDuration)))
 		return [false, 'Please provide a valid number for quiz duration'];
 	return [true, ''];
@@ -165,15 +164,4 @@ export function isValidSubmittedQuestions(questionsList: any) {
 }
 export function AreBothArraysEqual(arr1: any[], arr2: any[]) {
 	return equals(arr1.sort(), arr2.sort());
-}
-export function AreBothObjectsEqual(
-	obj1: CommonObjectWithStringKey,
-	obj2: CommonObjectWithStringKey
-) {
-	console.log(obj1, obj2);
-	for (const key in obj1) {
-		if (!(key in obj2)) return false;
-		if (!AreBothArraysEqual(obj1[key], obj2[key])) return false;
-	}
-	return true;
 }

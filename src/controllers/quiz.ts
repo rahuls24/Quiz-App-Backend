@@ -20,7 +20,6 @@ import {
 import { Quiz } from './../models/quiz';
 import { QuizTimeTracker } from './../models/quizTimeTracker';
 import { httpStatusCode } from './../utils/responseHandler';
-let swagger: any = {};
 export async function saveQuiz(
 	req: RequestForProtectedRoute,
 	res: Response,
@@ -818,10 +817,10 @@ export async function submitQuizHandler(
 }
 
 // Only need for testing
-function delayForGivenTime(time: number) {
-	return new Promise((res, rej) => {
-		setTimeout(() => {
-			res(24);
-		}, time);
-	});
-}
+// function delayForGivenTime(time: number) {
+// 	return new Promise((res, rej) => {
+// 		setTimeout(() => {
+// 			res(24);
+// 		}, time);
+// 	});
+// }
