@@ -1,7 +1,8 @@
 //Util Functions
-import { genSaltSync, hashSync } from 'bcryptjs';
+import { genSaltSync, hashSync, compare } from 'bcryptjs';
 import { IUser, RegisterUserPayload } from '../interfaces/authInterfaces';
 import { User } from '../models/user';
+import { sign } from 'jsonwebtoken';
 export async function saveUser(
 	newUser: RegisterUserPayload
 ): Promise<[boolean, IUser | null]> {
@@ -10,19 +11,34 @@ export async function saveUser(
 		newUser.password,
 		genSaltSync(Number(process.env.bcryptSaltRounds))
 	);
-	const registerUser = await new User(newUser).save();
-
+	const registerUser =  (await new User(newUser).save()).toObject();
 	if (registerUser) return [true, registerUser];
 	return [false, null];
 }
 
 export async function isUserPresentInDB(
 	email: string
-): Promise<[boolean, IUser | null]> {
+): Promise<[true, IUser] | [false,null]> {
 	const isUserExists = await User.findOne({ email }).lean();
 
 	if (isUserExists) return [true, isUserExists];
 	return [false, null];
 }
 
-export async function getBererToken() {}
+export function generateBearerToken(data: any, exp?: number) {
+	const bearerToken = sign(
+		{
+			exp: exp ?? Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
+			data
+		},
+		process.env.JWTSecretKey ?? 'defaultJwtKey'
+	);
+	return bearerToken;
+}
+
+export async function isPasswordMatched(
+	rawPassword: string,
+	hashedPassword: string
+) {
+	return await compare(rawPassword, hashedPassword);
+}

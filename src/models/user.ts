@@ -42,6 +42,10 @@ const userSchema = new Schema<IUser>({
 	isVerified: {
 		type: Boolean,
 		default: false
+	},
+	profileImageUrl:{
+		type:String,
+		required: false,
 	}
 });
 // Creating index base on email

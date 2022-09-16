@@ -10,3 +10,4 @@ settings.json
 /yarn-error.log
 /yarn.lock
 .env
+swagger-output.json
