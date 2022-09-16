@@ -1,9 +1,7 @@
-import { User } from './../../models/user';
 import {
-	Strategy as JwtStrategy,
-	ExtractJwt,
-	StrategyOptions
+	ExtractJwt, Strategy as JwtStrategy, StrategyOptions
 } from 'passport-jwt';
+import { User } from './../../models/user';
 
 import passport from 'passport';
 import { ErrorWithStatus } from '../../interfaces/common';

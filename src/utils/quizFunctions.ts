@@ -1,5 +1,4 @@
 import differenceInMinutes from 'date-fns/differenceInMinutes';
-import { Schema } from 'mongoose';
 import { AreBothArraysEqual } from './validators';
 type questionsListType = {
 	_id: string;

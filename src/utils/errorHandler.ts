@@ -1,5 +1,5 @@
-import { ErrorWithStatus } from './../interfaces/common';
 import { Response } from 'express';
+import { ErrorWithStatus } from './../interfaces/common';
 export function errorHandlerOfRequestCatchBlock(res: Response, err: Error) {
 	return res.status(500).json({
 		status: 'fail',
