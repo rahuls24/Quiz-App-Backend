@@ -16,6 +16,9 @@ import swaggerFile from './swagger-output.json';
 
 const app = express();
 
+//Avoid disclosing technology fingerprints
+app.disable("x-powered-by");
+
 // Initializing  middlewares
 app.use(morganMiddleware);
 app.use(express.json());

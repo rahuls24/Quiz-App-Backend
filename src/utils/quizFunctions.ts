@@ -1,5 +1,4 @@
 import differenceInMinutes from 'date-fns/differenceInMinutes';
-import { Schema } from 'mongoose';
 import { AreBothArraysEqual } from './validators';
 type questionsListType = {
 	_id: string;
@@ -8,17 +7,10 @@ type questionsListType = {
 type normalizeQuestionType = {
 	[k: string]: Array<string>;
 };
-export function groupQuestionsById(questionsList: Array<questionsListType>) {
-	let groupedQuestions: {
-		[k: string]: [];
-	} = {};
-	questionsList.forEach((question) => {
-		// if(question._id in )
-	});
-}
+
 
 export function normalizeQuestionData(questionsList: Array<questionsListType>) {
-	let normalizeQuestions: {
+	const normalizeQuestions: {
 		[k: string]: Array<string>;
 	} = {};
 	questionsList.forEach((question) => {
@@ -54,8 +46,8 @@ export function calculateMarks(
 	correctAnswerCount: number,
 	wrongAnswerCount: number,
 	marksPerCorrectAnswer: number,
-	marksPerWrongAnswer: number = 0.25,
-	isNegativeMarkApplicable: boolean = false
+	marksPerWrongAnswer = 0.25,
+	isNegativeMarkApplicable= false
 ) {
 	const totalMarksForCorrectAnswer =
 		correctAnswerCount * marksPerCorrectAnswer;

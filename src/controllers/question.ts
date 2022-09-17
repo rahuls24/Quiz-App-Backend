@@ -12,7 +12,7 @@ export async function saveQuestionsForTheQuiz(
 	res: Response,
 	next: NextFunction
 ) {
-	let questionsData = req.body.questionsData;
+	const questionsData = req.body.questionsData;
 	try {
 		// Req Body validations
 		if (
@@ -99,7 +99,7 @@ export async function getAllQuestionsOfAQuiz(
 		if (!isValidMongoObjectId(quizId))
 			throw createAnError('Please give a valid quiz id', 400);
 
-		let quizData = await Quiz.findById(quizId, {
+		const quizData = await Quiz.findById(quizId, {
 			_id: 0,
 			enrolledBy: 1,
 			createdBy: 1,
@@ -133,10 +133,6 @@ export async function getAllQuestionsOfAQuiz(
 				images: 1
 			}
 		).lean();
-		console.log(
-			shouldOnlyGiveTotalNoOfQuestion,
-			quizData.enrolledBy.map(String).includes(user._id)
-		);
 		if (!questionsList)
 			throw createAnError(
 				'Something went wrong while fetching questions from DB'

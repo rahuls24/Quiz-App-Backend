@@ -1,8 +1,8 @@
 //Util Functions
-import { genSaltSync, hashSync, compare } from 'bcryptjs';
+import { compare, genSaltSync, hashSync } from 'bcryptjs';
+import { sign } from 'jsonwebtoken';
 import { IUser, RegisterUserPayload } from '../interfaces/authInterfaces';
 import { User } from '../models/user';
-import { sign } from 'jsonwebtoken';
 export async function saveUser(
 	newUser: RegisterUserPayload
 ): Promise<[boolean, IUser | null]> {

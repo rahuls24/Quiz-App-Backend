@@ -1,24 +1,21 @@
-import { compare, genSaltSync, hashSync } from 'bcryptjs';
 import { NextFunction, Request, Response } from 'express';
 import { OAuth2Client } from 'google-auth-library';
-import { sign } from 'jsonwebtoken';
+import { pick } from 'ramda';
+import { v4 as uuidv4 } from 'uuid';
+import { RegisterUserPayload } from '../interfaces/authInterfaces';
 import { User } from '../models/user';
+import {
+	generateBearerToken,
+	isPasswordMatched, isUserPresentInDB,
+	saveUser
+} from '../utils/authFunctions';
 import { createAnError } from '../utils/errorHandler';
 import { httpStatusCode, responseHandler } from '../utils/responseHandler';
 import {
 	isValidReqBodyComingFromEmailLogin,
 	isValidReqBodyComingFromEmailRegister
 } from '../utils/validators';
-import {
-	isUserPresentInDB,
-	saveUser,
-	generateBearerToken,
-	isPasswordMatched
-} from '../utils/authFunctions';
 import { RequestForProtectedRoute } from './../interfaces/common';
-import { RegisterUserPayload } from '../interfaces/authInterfaces';
-import { pick } from 'ramda';
-import { v4 as uuidv4 } from 'uuid';
 export async function createUserWithEmailAndPassword(
 	req: Request,
 	res: Response,
@@ -69,7 +66,7 @@ export async function createUserWithEmailAndPassword(
 		);
 		return res.status(httpStatusCode.created).json({
 			status: 'success',
-			token: 'Bearer ' + bearerToken
+			token: `Bearer ${bearerToken}`
 		});
 	} catch (error) {
 		next(error);
@@ -163,7 +160,7 @@ export async function signinWithEmailAndPassword(
 
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			token: 'Bearer ' + bearerToken
+			token:`Bearer ${bearerToken}`
 		});
 	} catch (error) {
 		next(error);
@@ -280,7 +277,7 @@ export async function signinWithGoogle(
 			.status(isUserExists ? httpStatusCode.ok : httpStatusCode.created)
 			.json({
 				status: 'success',
-				token: 'Bearer ' + bearerToken
+				token:`Bearer ${bearerToken}`
 			});
 	} catch (error) {
 		next(error);
@@ -318,7 +315,7 @@ export async function getUserDetails(
 			__v: 0
 		}).lean();
 		if (currentUser) {
-			let resObj = {
+			const resObj = {
 				status: 'success',
 				user: currentUser
 			};
