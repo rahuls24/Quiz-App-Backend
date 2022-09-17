@@ -136,7 +136,7 @@ async function getAllQuizForCurrentExaminee(
 			throw createAnError(
 				'Something went wrong while getting quiz for the examinee'
 			);
-		let resObj = {
+		const resObj = {
 			status: 'success',
 			quizzes: quizzes
 		};
@@ -145,7 +145,7 @@ async function getAllQuizForCurrentExaminee(
 		next(error);
 	}
 }
-export async function getAllQuizzesForCurrentUser(
+export function getAllQuizzesForCurrentUser(
 	req: RequestForProtectedRoute,
 	res: Response,
 	next: NextFunction
@@ -156,7 +156,8 @@ export async function getAllQuizzesForCurrentUser(
 	} else if (user.role.toLowerCase() === 'examinee') {
 		return getAllQuizForCurrentExaminee(req, res, next);
 	} else {
-		let resObj = createFailureResponseObj('Something wrong in user role');
+		// TODO: Change this pattern with a more meaningful way
+		const resObj = createFailureResponseObj('Something wrong in user role');
 		return responseHandler(res, httpStatusCode.conflict, resObj);
 	}
 	//--------------Implementation part is done ---------------------
@@ -203,7 +204,8 @@ export async function getAllQuizzesForExaminers(
 
 		if (!quizzes)
 			throw createAnError('Something went wrong while getting quizzes');
-		let resObj = {
+		// TODO: Change this pattern
+		const resObj = {
 			status: 'success',
 			quizzes: quizzes
 		};
@@ -252,7 +254,7 @@ export async function enrollAExamineeInAQuiz(
 ) {
 	const user = req.user;
 	const userId = user._id;
-	let quizId = String(req.body.quizId ?? '');
+	const quizId = String(req.body.quizId ?? '');
 
 	try {
 		if (!isValidMongoObjectId(quizId))
@@ -683,7 +685,7 @@ export async function submitQuizHandler(
 				'Something wrong with submittedQuestions obj',
 				httpStatusCode.badRequest
 			);
-		let getQuestionList = Question.find(
+		const getQuestionList = Question.find(
 			{
 				quizzes: { $in: [quizId] }
 			},
@@ -692,13 +694,13 @@ export async function submitQuizHandler(
 				answers: 1
 			}
 		).lean();
-		let getQuizTimeDetails = QuizTimeTracker.findOne({
+		const getQuizTimeDetails = QuizTimeTracker.findOne({
 			quizId: quizId,
 			startedBy: user._id
 		}).lean();
 
-		let questionsList = await getQuestionList;
-		let quizTimeDetails = await getQuizTimeDetails;
+		const questionsList = await getQuestionList;
+		const quizTimeDetails = await getQuizTimeDetails;
 
 		if (questionsList?.length === 0)
 			throw createAnError(
@@ -708,7 +710,7 @@ export async function submitQuizHandler(
 			throw createAnError(
 				'Something went wrong while getting quiz start time'
 			);
-		let totalTimeTaken = differenceFromNowInMinutes(
+		const totalTimeTaken = differenceFromNowInMinutes(
 			quizTimeDetails.startedAt
 		);
 		const normalizeQuestionsDataFromDB = normalizeQuestionData(

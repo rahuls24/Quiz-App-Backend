@@ -66,7 +66,7 @@ export async function createUserWithEmailAndPassword(
 		);
 		return res.status(httpStatusCode.created).json({
 			status: 'success',
-			token: 'Bearer ' + bearerToken
+			token: `Bearer ${bearerToken}`
 		});
 	} catch (error) {
 		next(error);
@@ -160,7 +160,7 @@ export async function signinWithEmailAndPassword(
 
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			token: 'Bearer ' + bearerToken
+			token:`Bearer ${bearerToken}`
 		});
 	} catch (error) {
 		next(error);
@@ -277,7 +277,7 @@ export async function signinWithGoogle(
 			.status(isUserExists ? httpStatusCode.ok : httpStatusCode.created)
 			.json({
 				status: 'success',
-				token: 'Bearer ' + bearerToken
+				token:`Bearer ${bearerToken}`
 			});
 	} catch (error) {
 		next(error);
@@ -315,7 +315,7 @@ export async function getUserDetails(
 			__v: 0
 		}).lean();
 		if (currentUser) {
-			let resObj = {
+			const resObj = {
 				status: 'success',
 				user: currentUser
 			};

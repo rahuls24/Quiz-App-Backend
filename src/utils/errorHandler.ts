@@ -14,7 +14,7 @@ export function createFailureResponseObj(errorMsg: string) {
 }
 
 export function createAnError(errorMsg: string, statusCode = 500) {
-	let error: ErrorWithStatus = new Error(errorMsg);
+	const error: ErrorWithStatus = new Error(errorMsg);
 	error.status = statusCode;
 	return error;
 }
