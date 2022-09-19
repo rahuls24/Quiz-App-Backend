@@ -4,7 +4,7 @@ import {
 	createUserWithEmailAndPassword,
 	getUserDetails,
 	signinWithEmailAndPassword,
-	signinWithGoogle
+	signinWithGoogle,
 } from './../controllers/auth';
 
 export const router = Router();
@@ -19,4 +19,4 @@ router.get(
 	getUserDetails
 );
 
-router.get('/signin-with-google/:token/:role',signinWithGoogle)
+router.post('/signin-with-google/', signinWithGoogle);

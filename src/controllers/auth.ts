@@ -215,8 +215,8 @@ export async function signinWithGoogle(
 	res: Response,
 	next: NextFunction
 ) {
-	const code = String(req.params.code ?? '');
-	const userRole = String(req.params.role ?? '');
+	const code = String(req.body.code ?? '');
+	const userRole = String(req.body.role ?? '');
 	const VALID_ROLE = ['examiner', 'examinee'];
 	try {
 		// Checking the userRole is valid or not
@@ -232,18 +232,18 @@ export async function signinWithGoogle(
 			process.env.googleClientSecret,
 			'postmessage'
 		);
-		const { tokens } = await oAuth2Client.getToken(req.body.code);
+		const { tokens } = await client.getToken(code);
 		if (!('id_token' in tokens))
 			throw createAnError(
 				'Something went wrong while validating code(token) from google for authentication',
 				httpStatusCode.internalServerError
 			);
-		const [isDecoded, userDeatilsOrErrorMsg] = jwtTokenDecoder(
+		const [isDecoded, userDetailsOrErrorMsg] = jwtTokenDecoder(
 			tokens.id_token
 		);
-		if (!isDecoded)
+		if (isDecoded === false)
 			throw createAnError(
-				userDeatilsOrErrorMsg,
+				userDetailsOrErrorMsg,
 				httpStatusCode.internalServerError
 			);
 		const {
@@ -251,7 +251,7 @@ export async function signinWithGoogle(
 			name,
 			picture = '',
 			email_verified,
-		} = userDeatilsOrErrorMsg;
+		} = userDetailsOrErrorMsg;
 
 		let [isUserExists, currentUser] = await isUserPresentInDB(email);
 

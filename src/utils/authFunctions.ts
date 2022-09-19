@@ -46,11 +46,14 @@ export async function isPasswordMatched(
 	return await compare(rawPassword, hashedPassword);
 }
 
-function jwtTokenDecoder(
+export function jwtTokenDecoder(
 	token: string
 ): [true, CommonObjectWithStringKey] | [false, string] {
 	try {
-		return [true, jwtDecode(token)];
+		const decodedValues = jwtDecode(token);
+		if(typeof decodedValues==='object')
+			return [true, decodedValues];
+		throw new Error('Something went wrong while decoding token. We are getting different type of data. ')
 	} catch (error) {
 		const errorMsg =
 			error?.message ?? 'Something went wrong while decoding token';
