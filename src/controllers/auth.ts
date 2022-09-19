@@ -375,3 +375,20 @@ export async function getUserDetails(
       */
 	}
 }
+
+export function isUserAlredyRegistered(
+	req: Request,
+	res: Response,
+	next: NextFunction
+) {
+	const email = req.params.email ?? '';
+	try {
+		const [isUserAlredyRegister] = isUserPresentInDB(email);
+		return res.status(httpStatusCode.ok).json({
+			status: 'success',
+			isUserAlredyRegister,
+		});
+	} catch (err) {
+		next(err);
+	}
+}

@@ -9,6 +9,7 @@ import {
 
 export const router = Router();
 
+router.get('/is-user-already-registered/:email', isUserAlreadyRegistered);
 router.post('/register-user-with-email', createUserWithEmailAndPassword);
 
 router.post('/signin-user-with-email', signinWithEmailAndPassword);
