@@ -6,14 +6,16 @@ import { RegisterUserPayload } from '../interfaces/authInterfaces';
 import { User } from '../models/user';
 import {
 	generateBearerToken,
-	isPasswordMatched, isUserPresentInDB,
-	saveUser
+	isPasswordMatched,
+	isUserPresentInDB,
+	saveUser,
+	jwtTokenDecoder,
 } from '../utils/authFunctions';
 import { createAnError } from '../utils/errorHandler';
 import { httpStatusCode, responseHandler } from '../utils/responseHandler';
 import {
 	isValidReqBodyComingFromEmailLogin,
-	isValidReqBodyComingFromEmailRegister
+	isValidReqBodyComingFromEmailRegister,
 } from '../utils/validators';
 import { RequestForProtectedRoute } from './../interfaces/common';
 export async function createUserWithEmailAndPassword(
@@ -25,7 +27,7 @@ export async function createUserWithEmailAndPassword(
 		name: String(req.body.name ?? ''),
 		email: String(req.body.email ?? ''),
 		password: String(req.body.password ?? ''),
-		role: String(req.body.role ?? '')
+		role: String(req.body.role ?? ''),
 	};
 
 	try {
@@ -59,14 +61,14 @@ export async function createUserWithEmailAndPassword(
 			'name',
 			'email',
 			'role',
-			'isVerified'
+			'isVerified',
 		];
 		const bearerToken = generateBearerToken(
 			pick(requiredPropertyForHashing, registerUser)
 		);
 		return res.status(httpStatusCode.created).json({
 			status: 'success',
-			token: `Bearer ${bearerToken}`
+			token: `Bearer ${bearerToken}`,
 		});
 	} catch (error) {
 		next(error);
@@ -120,7 +122,7 @@ export async function signinWithEmailAndPassword(
 ) {
 	const currentUserFromReq = {
 		email: String(req.body.email ?? ''),
-		password: String(req.body.password ?? '')
+		password: String(req.body.password ?? ''),
 	};
 	try {
 		// Validation of body data start from here.
@@ -152,7 +154,7 @@ export async function signinWithEmailAndPassword(
 			'name',
 			'email',
 			'role',
-			'isVerified'
+			'isVerified',
 		];
 		const bearerToken = generateBearerToken(
 			pick(requiredPropertyForHashing, currentUserFromDB)
@@ -160,7 +162,7 @@ export async function signinWithEmailAndPassword(
 
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			token:`Bearer ${bearerToken}`
+			token: `Bearer ${bearerToken}`,
 		});
 	} catch (error) {
 		next(error);
@@ -213,7 +215,7 @@ export async function signinWithGoogle(
 	res: Response,
 	next: NextFunction
 ) {
-	const token = String(req.params.token ?? '');
+	const code = String(req.params.code ?? '');
 	const userRole = String(req.params.role ?? '');
 	const VALID_ROLE = ['examiner', 'examinee'];
 	try {
@@ -225,17 +227,31 @@ export async function signinWithGoogle(
 			);
 
 		// setup for token verification from google-auth-library.
-		const client = new OAuth2Client(process.env.googleClintID);
-		const ticket = await client.verifyIdToken({
-			idToken: token,
-			audience: process.env.googleClintID
-		});
+		const client = new OAuth2Client(
+			process.env.googleClintID,
+			process.env.googleClientSecret,
+			'postmessage'
+		);
+		const { tokens } = await oAuth2Client.getToken(req.body.code);
+		if (!('id_token' in tokens))
+			throw createAnError(
+				'Something went wrong while validating code(token) from google for authentication',
+				httpStatusCode.internalServerError
+			);
+		const [isDecoded, userDeatilsOrErrorMsg] = jwtTokenDecoder(
+			tokens.id_token
+		);
+		if (!isDecoded)
+			throw createAnError(
+				userDeatilsOrErrorMsg,
+				httpStatusCode.internalServerError
+			);
 		const {
 			email,
 			name,
 			picture = '',
-			email_verified
-		} = ticket.getPayload();
+			email_verified,
+		} = userDeatilsOrErrorMsg;
 
 		let [isUserExists, currentUser] = await isUserPresentInDB(email);
 
@@ -246,7 +262,7 @@ export async function signinWithGoogle(
 				password: uuidv4(),
 				role: userRole,
 				isVerified: email_verified,
-				profileImageUrl: picture
+				profileImageUrl: picture,
 			};
 			const [isUserRegister, registerUser] = await saveUser(
 				// We have already checking for validation of req object by calling isValidReqBodyComingFromEmailRegister function. So this explicit type casting will not cause any problem.
@@ -268,7 +284,7 @@ export async function signinWithGoogle(
 			'name',
 			'email',
 			'role',
-			'isVerified'
+			'isVerified',
 		];
 		const bearerToken = generateBearerToken(
 			pick(requiredPropertyForHashing, currentUser)
@@ -277,7 +293,7 @@ export async function signinWithGoogle(
 			.status(isUserExists ? httpStatusCode.ok : httpStatusCode.created)
 			.json({
 				status: 'success',
-				token:`Bearer ${bearerToken}`
+				token: `Bearer ${bearerToken}`,
 			});
 	} catch (error) {
 		next(error);
@@ -312,12 +328,12 @@ export async function getUserDetails(
 	try {
 		const currentUser = await User.findById(user._id, {
 			password: 0,
-			__v: 0
+			__v: 0,
 		}).lean();
 		if (currentUser) {
 			const resObj = {
 				status: 'success',
-				user: currentUser
+				user: currentUser,
 			};
 			return responseHandler(res, httpStatusCode.ok, resObj);
 		}

@@ -1,8 +1,11 @@
 //Util Functions
 import { compare, genSaltSync, hashSync } from 'bcryptjs';
 import { sign } from 'jsonwebtoken';
+import jwtDecode from 'jwt-decode';
 import { IUser, RegisterUserPayload } from '../interfaces/authInterfaces';
+import { CommonObjectWithStringKey } from '../interfaces/common';
 import { User } from '../models/user';
+
 export async function saveUser(
 	newUser: RegisterUserPayload
 ): Promise<[boolean, IUser | null]> {
@@ -11,14 +14,14 @@ export async function saveUser(
 		newUser.password,
 		genSaltSync(Number(process.env.bcryptSaltRounds))
 	);
-	const registerUser =  (await new User(newUser).save()).toObject();
+	const registerUser = (await new User(newUser).save()).toObject();
 	if (registerUser) return [true, registerUser];
 	return [false, null];
 }
 
 export async function isUserPresentInDB(
 	email: string
-): Promise<[true, IUser] | [false,null]> {
+): Promise<[true, IUser] | [false, null]> {
 	const isUserExists = await User.findOne({ email }).lean();
 
 	if (isUserExists) return [true, isUserExists];
@@ -29,7 +32,7 @@ export function generateBearerToken(data: any, exp?: number) {
 	const bearerToken = sign(
 		{
 			exp: exp ?? Math.floor(Date.now() / 1000) + 30 * 24 * 60 * 60,
-			data
+			data,
 		},
 		process.env.JWTSecretKey ?? 'defaultJwtKey'
 	);
@@ -41,4 +44,16 @@ export async function isPasswordMatched(
 	hashedPassword: string
 ) {
 	return await compare(rawPassword, hashedPassword);
+}
+
+function jwtTokenDecoder(
+	token: string
+): [true, CommonObjectWithStringKey] | [false, string] {
+	try {
+		return [true, jwtDecode(token)];
+	} catch (error) {
+		const errorMsg =
+			error?.message ?? 'Something went wrong while decoding token';
+		return [false, errorMsg];
+	}
 }
