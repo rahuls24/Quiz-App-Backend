@@ -19,4 +19,4 @@ router.get(
 	getUserDetails
 );
 
-router.post('/signin-with-google/', signinWithGoogle);
+router.post('/signin-user-with-google', signinWithGoogle);
