@@ -376,17 +376,17 @@ export async function getUserDetails(
 	}
 }
 
-export function isUserAlredyRegistered(
+export async function isUserAlreadyRegistered(
 	req: Request,
 	res: Response,
 	next: NextFunction
 ) {
 	const email = req.params.email ?? '';
 	try {
-		const [isUserAlredyRegister] = isUserPresentInDB(email);
+		const [isUserAlreadyRegister] = await isUserPresentInDB(email);
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			isUserAlredyRegister,
+			isUserAlreadyRegister,
 		});
 	} catch (err) {
 		next(err);

@@ -5,6 +5,7 @@ import {
 	getUserDetails,
 	signinWithEmailAndPassword,
 	signinWithGoogle,
+	isUserAlreadyRegistered,
 } from './../controllers/auth';
 
 export const router = Router();
