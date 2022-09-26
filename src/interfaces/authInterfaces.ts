@@ -7,9 +7,10 @@ export interface RegisterUserPayload {
 }
 export interface IUser extends RegisterUserPayload {
 	_id:string;
-	quizzes: string[];
 	registerOn: Date;
 	isVerified: boolean;
+	isPasswordChangeRequired:boolean;
 	profileImageUrl?:string,
+
 	
 }

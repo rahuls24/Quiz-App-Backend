@@ -1,8 +1,9 @@
 import { Types } from 'mongoose';
-import { equals } from 'ramda';
+import { equals, intersection } from 'ramda';
 import isEmail from 'validator/lib/isEmail';
 import isEmpty from 'validator/lib/isEmpty';
-
+import { CommonObjectWithStringKey } from '../interfaces/common';
+import { createLookupArrayForElementAbsence } from '../utils/commonFunctions';
 export function isValidEmail(email: string): boolean {
 	return isEmail(email);
 }
@@ -25,7 +26,7 @@ type ReqUserFormEmailRegister = {
 };
 export function isValidReqBodyComingFromEmailRegister(
 	reqUser: ReqUserFormEmailRegister
-): [boolean, string] {
+): [false, string] | [true, null] {
 	if (Object.keys(reqUser).some(isEmptyString))
 		return [false, 'Please provide value for all the parameter'];
 	// Individual validation
@@ -37,11 +38,54 @@ export function isValidReqBodyComingFromEmailRegister(
 		return [false, 'Name should be of minimum 6 characters'];
 	if (!isValidRole(reqUser.role))
 		return [false, 'Role will be either examinee or examiner'];
-	return [true, ''];
+	return [true, null];
 }
-export function isValidRole(role:string){
+
+export function isValidReqBodyComingFromUpdateUser(
+	reqObj: CommonObjectWithStringKey
+): [true, null] | [false, string] {
+	const VALID_FIELD = {
+		name: '',
+		email: '',
+		password: '',
+		registerOn: new Date(),
+		isVerified: false,
+		role: 'examinee',
+		isPasswordChangeRequired: false
+	};
+	const validFieldKeys = Object.keys(VALID_FIELD);
+	const reqObjKeys = Object.keys(reqObj);
+	// If reqObjKeys of length 0 it means req body does not contains any attribute.
+	if (reqObjKeys.length === 0) return [false, 'Request body is empty'];
+	const validFieldKeysComingFromReqObj = intersection(
+		validFieldKeys,
+		reqObjKeys
+	);
+
+	//  If the length is equal it means that all attributes are valid in reqObj.
+	if (
+		validFieldKeysComingFromReqObj.length === reqObjKeys.length &&
+		reqObjKeys.length !== 0
+	)
+		return [true, null];
+
+	//  If function executing this part means there are some invalid attributes present in reqObj.
+	const isElementAbsenceInValidFieldKeys =
+		createLookupArrayForElementAbsence(validFieldKeys);
+	const invalidFieldKeysComingFromReqObj = reqObjKeys.filter(
+		isElementAbsenceInValidFieldKeys
+	);
+
+	const errorMsg = `These attributes  ( ${invalidFieldKeysComingFromReqObj.join(
+		' | '
+	)} ) are invalid. The valid attributes are ( ${validFieldKeys.join(
+		' | '
+	)} )`;
+	return [false, errorMsg];
+}
+export function isValidRole(role: string): boolean {
 	const VALID_USER_ROLE = ['examinee', 'examiner'];
-	return VALID_USER_ROLE.includes(role.toLowerCase())
+	return VALID_USER_ROLE.includes(role.toLowerCase());
 }
 
 type ReqUserFromEmailLogin = {
@@ -50,14 +94,14 @@ type ReqUserFromEmailLogin = {
 };
 export function isValidReqBodyComingFromEmailLogin(
 	reqUser: ReqUserFromEmailLogin
-): [boolean, string] {
+): [true, null] | [false, string] {
 	if (Object.values(reqUser).some(isEmptyString))
 		return [false, 'Please provide value for all the parameter'];
 	if (!isValidEmail(reqUser.email))
 		return [false, 'Please provide a valid email'];
 	if (reqUser.password.length < 6)
 		return [false, 'Password should be of minimum 6 characters'];
-	return [true, ''];
+	return [true, null];
 }
 type ReqQuizFromSaveQuiz = {
 	name: string;
@@ -69,15 +113,15 @@ type ReqQuizFromSaveQuiz = {
 
 export function isValidReqBodyComingFromSaveQuiz(
 	reqQuiz: ReqQuizFromSaveQuiz
-): [boolean, string] {
+): [true, null] | [false, string] {
 	if (reqQuiz.name.length === 0) return [false, 'Please provide quiz name'];
 	if (isNaN(Number(reqQuiz.quizDuration)))
 		return [false, 'Please provide a valid number for quiz duration'];
-	return [true, ''];
+	return [true, null];
 }
 export function isValidReqBodyComingFromGetAllQuizzesForExaminers(
 	reqExaminers: any
-): [boolean, string] {
+): [true, null] | [false, string] {
 	if (!reqExaminers) return [false, 'Please send examiner data'];
 	if (!Array.isArray(reqExaminers))
 		return [false, 'Please send examiner data in array format'];
@@ -86,7 +130,7 @@ export function isValidReqBodyComingFromGetAllQuizzesForExaminers(
 		!reqExaminers.every(isValidMongoObjectId)
 	)
 		return [false, 'Please send valid examiner id.'];
-	return [true, ''];
+	return [true, null];
 }
 export function isValidQuestionData(question: any = {}): boolean {
 	if (
@@ -146,7 +190,7 @@ export function isValidQuestionData(question: any = {}): boolean {
 		};
 	}
 }
-export function isValidSubmittedQuestions(questionsList: any) {
+export function isValidSubmittedQuestions(questionsList: any): boolean {
 	if (!Array.isArray(questionsList)) return false;
 	if (
 		!questionsList.every((question: any) =>
@@ -162,6 +206,6 @@ export function isValidSubmittedQuestions(questionsList: any) {
 		return false;
 	return true;
 }
-export function AreBothArraysEqual(arr1: any[], arr2: any[]) {
+export function AreBothArraysEqual(arr1: any[], arr2: any[]): boolean {
 	return equals(arr1.sort(), arr2.sort());
 }

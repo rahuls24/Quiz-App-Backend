@@ -5,20 +5,25 @@ import {
 	getUserDetails,
 	signinWithEmailAndPassword,
 	signinWithGoogle,
-	isUserAlreadyRegistered,
+	updateUserDetails
 } from './../controllers/auth';
 
 export const router = Router();
 
-router.get('/is-user-already-registered/:email', isUserAlreadyRegistered);
 router.post('/register-user-with-email', createUserWithEmailAndPassword);
 
-router.post('/signin-user-with-email', signinWithEmailAndPassword);
+router.get('/signin-user-with-email', signinWithEmailAndPassword);
+
+router.get('/signin-with-google/:code/', signinWithGoogle);
+
+router.patch(
+	'/update-user-details',
+	passport.authenticate('user', { session: false }),
+	updateUserDetails
+);
 
 router.get(
 	'/get-user-details',
 	passport.authenticate('user', { session: false }),
 	getUserDetails
 );
-
-router.post('/signin-user-with-google', signinWithGoogle);

@@ -7,15 +7,14 @@ import { User } from '../models/user';
 import {
 	generateBearerToken,
 	isPasswordMatched,
-	isUserPresentInDB,
-	saveUser,
-	jwtTokenDecoder,
+	isUserPresentInDB, jwtTokenDecoder, saveUser
 } from '../utils/authFunctions';
 import { createAnError } from '../utils/errorHandler';
 import { httpStatusCode, responseHandler } from '../utils/responseHandler';
 import {
-	isValidReqBodyComingFromEmailLogin,
+	isValidMongoObjectId, isValidReqBodyComingFromEmailLogin,
 	isValidReqBodyComingFromEmailRegister,
+	isValidReqBodyComingFromUpdateUser
 } from '../utils/validators';
 import { RequestForProtectedRoute } from './../interfaces/common';
 export async function createUserWithEmailAndPassword(
@@ -28,6 +27,7 @@ export async function createUserWithEmailAndPassword(
 		email: String(req.body.email ?? ''),
 		password: String(req.body.password ?? ''),
 		role: String(req.body.role ?? ''),
+		isPasswordChangeRequired:false,
 	};
 
 	try {
@@ -62,6 +62,7 @@ export async function createUserWithEmailAndPassword(
 			'email',
 			'role',
 			'isVerified',
+			'isPasswordChangeRequired',
 		];
 		const bearerToken = generateBearerToken(
 			pick(requiredPropertyForHashing, registerUser)
@@ -155,6 +156,7 @@ export async function signinWithEmailAndPassword(
 			'email',
 			'role',
 			'isVerified',
+			'isPasswordChangeRequired',
 		];
 		const bearerToken = generateBearerToken(
 			pick(requiredPropertyForHashing, currentUserFromDB)
@@ -215,16 +217,9 @@ export async function signinWithGoogle(
 	res: Response,
 	next: NextFunction
 ) {
-	const code = String(req.body.code ?? '');
-	const userRole = String(req.body.role ?? '');
-	const VALID_ROLE = ['examiner', 'examinee'];
+	const code = String(req.params.code ?? '');
+	const userRole = 'examiner';
 	try {
-		// Checking the userRole is valid or not
-		if (!VALID_ROLE.includes(userRole))
-			throw createAnError(
-				'Please provide a valid role. Role should be either examinee | examiner',
-				400
-			);
 
 		// setup for token verification from google-auth-library.
 		const client = new OAuth2Client(
@@ -254,7 +249,7 @@ export async function signinWithGoogle(
 		} = userDetailsOrErrorMsg;
 
 		let [isUserExists, currentUser] = await isUserPresentInDB(email);
-
+		
 		if (!isUserExists) {
 			const registerUserPayload = {
 				name,
@@ -263,6 +258,7 @@ export async function signinWithGoogle(
 				role: userRole,
 				isVerified: email_verified,
 				profileImageUrl: picture,
+				isPasswordChangeRequired:true,
 			};
 			const [isUserRegister, registerUser] = await saveUser(
 				// We have already checking for validation of req object by calling isValidReqBodyComingFromEmailRegister function. So this explicit type casting will not cause any problem.
@@ -285,6 +281,7 @@ export async function signinWithGoogle(
 			'email',
 			'role',
 			'isVerified',
+			'isPasswordChangeRequired'
 		];
 		const bearerToken = generateBearerToken(
 			pick(requiredPropertyForHashing, currentUser)
@@ -376,19 +373,26 @@ export async function getUserDetails(
 	}
 }
 
-export async function isUserAlreadyRegistered(
-	req: Request,
+export async function updateUserDetails(
+	req: RequestForProtectedRoute,
 	res: Response,
 	next: NextFunction
-) {
-	const email = req.params.email ?? '';
+){
+	const {id,...updateOptions} = req.body;
 	try {
-		const [isUserAlreadyRegister] = await isUserPresentInDB(email);
-		return res.status(httpStatusCode.ok).json({
+		const [isReqBodyContainsValidPayload,errorMsg] = isValidReqBodyComingFromUpdateUser(updateOptions);
+		if(!isReqBodyContainsValidPayload) throw createAnError(errorMsg,httpStatusCode.badRequest);
+		if(!isValidMongoObjectId(id)) throw createAnError('Please give a valid id',httpStatusCode.badRequest);
+
+		const filterOption= {_id:id};
+		const updatedUserDetails = await User.findByIdAndUpdate(filterOption,updateOptions,{new:true,runValidators: true})
+		return res.status(200).json({
 			status: 'success',
-			isUserAlreadyRegister,
-		});
-	} catch (err) {
-		next(err);
+			updatedUserDetails
+		})
+		
+	} catch (error) {
+		next(error)
 	}
+	
 }

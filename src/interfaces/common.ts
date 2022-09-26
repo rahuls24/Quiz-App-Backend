@@ -17,3 +17,4 @@ export interface ErrorWithStatus extends Error {
 export interface CommonObjectWithStringKey {
 	[k: string]: any;
 }
+
