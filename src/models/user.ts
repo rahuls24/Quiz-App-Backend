@@ -46,6 +46,10 @@ const userSchema = new Schema<IUser>({
 	profileImageUrl:{
 		type:String,
 		required: false,
+	},
+	isPasswordChangeRequired:{
+		type:Boolean,
+		default:false,
 	}
 });
 // Creating index base on email

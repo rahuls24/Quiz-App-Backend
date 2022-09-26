@@ -12,8 +12,9 @@ import {
 import { createAnError } from '../utils/errorHandler';
 import { httpStatusCode, responseHandler } from '../utils/responseHandler';
 import {
-	isValidReqBodyComingFromEmailLogin,
-	isValidReqBodyComingFromEmailRegister
+	isValidMongoObjectId, isValidReqBodyComingFromEmailLogin,
+	isValidReqBodyComingFromEmailRegister,
+	isValidReqBodyComingFromUpdateUser
 } from '../utils/validators';
 import { RequestForProtectedRoute } from './../interfaces/common';
 export async function createUserWithEmailAndPassword(
@@ -25,7 +26,8 @@ export async function createUserWithEmailAndPassword(
 		name: String(req.body.name ?? ''),
 		email: String(req.body.email ?? ''),
 		password: String(req.body.password ?? ''),
-		role: String(req.body.role ?? '')
+		role: String(req.body.role ?? ''),
+		isPasswordChangeRequired:false,
 	};
 
 	try {
@@ -59,7 +61,8 @@ export async function createUserWithEmailAndPassword(
 			'name',
 			'email',
 			'role',
-			'isVerified'
+			'isVerified',
+			'isPasswordChangeRequired',
 		];
 		const bearerToken = generateBearerToken(
 			pick(requiredPropertyForHashing, registerUser)
@@ -152,7 +155,8 @@ export async function signinWithEmailAndPassword(
 			'name',
 			'email',
 			'role',
-			'isVerified'
+			'isVerified',
+			'isPasswordChangeRequired',
 		];
 		const bearerToken = generateBearerToken(
 			pick(requiredPropertyForHashing, currentUserFromDB)
@@ -214,15 +218,8 @@ export async function signinWithGoogle(
 	next: NextFunction
 ) {
 	const token = String(req.params.token ?? '');
-	const userRole = String(req.params.role ?? '');
-	const VALID_ROLE = ['examiner', 'examinee'];
+	const userRole = 'examiner';
 	try {
-		// Checking the userRole is valid or not
-		if (!VALID_ROLE.includes(userRole))
-			throw createAnError(
-				'Please provide a valid role. Role should be either examinee | examiner',
-				400
-			);
 
 		// setup for token verification from google-auth-library.
 		const client = new OAuth2Client(process.env.googleClintID);
@@ -238,7 +235,7 @@ export async function signinWithGoogle(
 		} = ticket.getPayload();
 
 		let [isUserExists, currentUser] = await isUserPresentInDB(email);
-
+		
 		if (!isUserExists) {
 			const registerUserPayload = {
 				name,
@@ -246,7 +243,8 @@ export async function signinWithGoogle(
 				password: uuidv4(),
 				role: userRole,
 				isVerified: email_verified,
-				profileImageUrl: picture
+				profileImageUrl: picture,
+				isPasswordChangeRequired:true,
 			};
 			const [isUserRegister, registerUser] = await saveUser(
 				// We have already checking for validation of req object by calling isValidReqBodyComingFromEmailRegister function. So this explicit type casting will not cause any problem.
@@ -268,7 +266,8 @@ export async function signinWithGoogle(
 			'name',
 			'email',
 			'role',
-			'isVerified'
+			'isVerified',
+			'isPasswordChangeRequired'
 		];
 		const bearerToken = generateBearerToken(
 			pick(requiredPropertyForHashing, currentUser)
@@ -358,4 +357,28 @@ export async function getUserDetails(
 		};
       */
 	}
+}
+
+export async function updateUserDetails(
+	req: RequestForProtectedRoute,
+	res: Response,
+	next: NextFunction
+){
+	const {id,...updateOptions} = req.body;
+	try {
+		const [isReqBodyContainsValidPayload,errorMsg] = isValidReqBodyComingFromUpdateUser(updateOptions);
+		if(!isReqBodyContainsValidPayload) throw createAnError(errorMsg,httpStatusCode.badRequest);
+		if(!isValidMongoObjectId(id)) throw createAnError('Please give a valid id',httpStatusCode.badRequest);
+
+		const filterOption= {_id:id};
+		const updatedUserDetails = await User.findByIdAndUpdate(filterOption,updateOptions,{new:true,runValidators: true})
+		return res.status(200).json({
+			status: 'success',
+			updatedUserDetails
+		})
+		
+	} catch (error) {
+		next(error)
+	}
+	
 }
