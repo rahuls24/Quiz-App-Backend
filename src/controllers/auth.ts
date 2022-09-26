@@ -6,8 +6,8 @@ import { RegisterUserPayload } from '../interfaces/authInterfaces';
 import { User } from '../models/user';
 import {
 	generateBearerToken,
-	isPasswordMatched, isUserPresentInDB,
-	saveUser
+	isPasswordMatched,
+	isUserPresentInDB, jwtTokenDecoder, saveUser
 } from '../utils/authFunctions';
 import { createAnError } from '../utils/errorHandler';
 import { httpStatusCode, responseHandler } from '../utils/responseHandler';
@@ -69,7 +69,7 @@ export async function createUserWithEmailAndPassword(
 		);
 		return res.status(httpStatusCode.created).json({
 			status: 'success',
-			token: `Bearer ${bearerToken}`
+			token: `Bearer ${bearerToken}`,
 		});
 	} catch (error) {
 		next(error);
@@ -123,7 +123,7 @@ export async function signinWithEmailAndPassword(
 ) {
 	const currentUserFromReq = {
 		email: String(req.body.email ?? ''),
-		password: String(req.body.password ?? '')
+		password: String(req.body.password ?? ''),
 	};
 	try {
 		// Validation of body data start from here.
@@ -164,7 +164,7 @@ export async function signinWithEmailAndPassword(
 
 		return res.status(httpStatusCode.ok).json({
 			status: 'success',
-			token:`Bearer ${bearerToken}`
+			token: `Bearer ${bearerToken}`,
 		});
 	} catch (error) {
 		next(error);
@@ -217,22 +217,36 @@ export async function signinWithGoogle(
 	res: Response,
 	next: NextFunction
 ) {
-	const token = String(req.params.token ?? '');
+	const code = String(req.params.code ?? '');
 	const userRole = 'examiner';
 	try {
 
 		// setup for token verification from google-auth-library.
-		const client = new OAuth2Client(process.env.googleClintID);
-		const ticket = await client.verifyIdToken({
-			idToken: token,
-			audience: process.env.googleClintID
-		});
+		const client = new OAuth2Client(
+			process.env.googleClintID,
+			process.env.googleClientSecret,
+			'postmessage'
+		);
+		const { tokens } = await client.getToken(code);
+		if (!('id_token' in tokens))
+			throw createAnError(
+				'Something went wrong while validating code(token) from google for authentication',
+				httpStatusCode.internalServerError
+			);
+		const [isDecoded, userDetailsOrErrorMsg] = jwtTokenDecoder(
+			tokens.id_token
+		);
+		if (isDecoded === false)
+			throw createAnError(
+				userDetailsOrErrorMsg,
+				httpStatusCode.internalServerError
+			);
 		const {
 			email,
 			name,
 			picture = '',
-			email_verified
-		} = ticket.getPayload();
+			email_verified,
+		} = userDetailsOrErrorMsg;
 
 		let [isUserExists, currentUser] = await isUserPresentInDB(email);
 		
@@ -276,7 +290,7 @@ export async function signinWithGoogle(
 			.status(isUserExists ? httpStatusCode.ok : httpStatusCode.created)
 			.json({
 				status: 'success',
-				token:`Bearer ${bearerToken}`
+				token: `Bearer ${bearerToken}`,
 			});
 	} catch (error) {
 		next(error);
@@ -311,12 +325,12 @@ export async function getUserDetails(
 	try {
 		const currentUser = await User.findById(user._id, {
 			password: 0,
-			__v: 0
+			__v: 0,
 		}).lean();
 		if (currentUser) {
 			const resObj = {
 				status: 'success',
-				user: currentUser
+				user: currentUser,
 			};
 			return responseHandler(res, httpStatusCode.ok, resObj);
 		}

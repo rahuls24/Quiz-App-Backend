@@ -12,9 +12,9 @@ export const router = Router();
 
 router.post('/register-user-with-email', createUserWithEmailAndPassword);
 
-router.post('/signin-user-with-email', signinWithEmailAndPassword);
+router.get('/signin-user-with-email', signinWithEmailAndPassword);
 
-router.get('/signin-with-google/:token/:role', signinWithGoogle);
+router.get('/signin-with-google/:code/', signinWithGoogle);
 
 router.patch(
 	'/update-user-details',
