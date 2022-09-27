@@ -5,7 +5,7 @@ import {
 	getUserDetails,
 	signinWithEmailAndPassword,
 	signinWithGoogle,
-	updateUserDetails
+	updateUserDetails,
 } from './../controllers/auth';
 
 export const router = Router();
@@ -14,7 +14,7 @@ router.post('/register-user-with-email', createUserWithEmailAndPassword);
 
 router.get('/signin-user-with-email', signinWithEmailAndPassword);
 
-router.get('/signin-with-google/:code/', signinWithGoogle);
+router.put('/signin-with-google', signinWithGoogle);
 
 router.patch(
 	'/update-user-details',
