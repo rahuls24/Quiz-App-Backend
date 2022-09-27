@@ -12,7 +12,7 @@ export const router = Router();
 
 router.post('/register-user-with-email', createUserWithEmailAndPassword);
 
-router.get('/signin-user-with-email', signinWithEmailAndPassword);
+router.post('/signin-user-with-email', signinWithEmailAndPassword);
 
 router.put('/signin-with-google', signinWithGoogle);
 
