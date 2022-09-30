@@ -380,19 +380,14 @@ export async function updateUserDetails(
 	res: Response,
 	next: NextFunction
 ) {
-	const { id, ...updateOptions } = req.body;
+	const updateOptions  = req.body;
+	const {_id:userId} = req.user;
 	try {
 		const [isReqBodyContainsValidPayload, errorMsg] =
 			isValidReqBodyComingFromUpdateUser(updateOptions);
 		if (!isReqBodyContainsValidPayload)
 			throw createAnError(errorMsg, httpStatusCode.badRequest);
-		if (!isValidMongoObjectId(id))
-			throw createAnError(
-				'Please give a valid id',
-				httpStatusCode.badRequest
-			);
-
-		const filterOption = { _id: id };
+		const filterOption = { _id: userId };
 		const updatedUserDetails = await User.findByIdAndUpdate(
 			filterOption,
 			updateOptions,
